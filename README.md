@@ -202,6 +202,16 @@ Saving the origin never publishes by itself. A checkpoint validates trackers, co
 
 The data repository is separate from this public application repository. Never attach a private tracker-data origin to the app source repository or commit real task evidence into the app. Disconnect the data origin in global settings to return to local-only checkpoints.
 
+## Notifications
+
+The bell keeps the latest 200 observed status changes and to-do completion/reopening updates across workspaces. Its popover opens on the current workspace, with All and other workspace tabs. Each workspace gets an accent color and an automatically assigned sound; choose among six sounds in its tab or mute globally.
+
+Sonner toasts stay until dismissed with their × or **Clear toast stack**. Dismissing a toast keeps its history in the bell. **Clear all workspaces** in the popover clears history for every workspace in this browser. History and sound choices persist locally in browser storage and synchronize between tabs on the same origin; they are not copied into tracker files or synced between browsers.
+
+Click **View** or a history entry to open its workspace and collection, reveal the row regardless of saved filters, scroll to it, and highlight it for five seconds. Deleted items show an explanatory message. Existing drafts remain intact; switching workspaces uses the normal unsaved-changes protection.
+
+Detection polls all registered workspaces every three seconds while Petal is open, including CLI/agent changes. The first observation establishes a baseline without generating old notifications. A failed workspace read preserves its previous baseline. Changes between polls can be coalesced into the latest observed state; this is not a complete server-side event audit. Sound starts after your first browser interaction, subject to browser autoplay rules.
+
 ## Troubleshooting
 
 | Symptom                    | What to check                                                                                                     |

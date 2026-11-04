@@ -1,7 +1,27 @@
+import React from "react";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 export function DetailValue({ value }: { value: unknown }) {
   if (value === null) return <span className="muted">null</span>;
-  if (typeof value === "string") return <Markdown>{value}</Markdown>;
+  if (typeof value === "string")
+    return (
+      <Markdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        components={{
+          a: ({ node, ...props }) => (
+            <a {...props} target="_blank" rel="noopener noreferrer" />
+          ),
+          table: ({ node, ...props }) => (
+            <div className="markdown-table">
+              <table {...props} />
+            </div>
+          ),
+        }}
+      >
+        {value}
+      </Markdown>
+    );
   if (typeof value !== "object") return <span>{String(value)}</span>;
   if (Array.isArray(value))
     return value.length ? (

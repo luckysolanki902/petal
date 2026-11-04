@@ -3082,3 +3082,51 @@ textarea {
 .category-location-preview[open] > summary {
   margin-bottom: 12px;
 }
+
+.rich-text a {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-underline-offset: 3px;
+}
+.rich-text a:hover {
+  opacity: 0.75;
+}
+.rich-text blockquote {
+  margin: 16px 0;
+  padding: 2px 16px;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+.rich-text pre {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.rich-text pre code {
+  padding: 0;
+  background: transparent;
+  white-space: pre;
+}
+.rich-text .markdown-table {
+  overflow-x: auto;
+  margin: 16px 0;
+}
+.rich-text th {
+  text-align: left;
+  font-weight: 650;
+}
+.rich-text .task-list-item {
+  list-style: none;
+}
+.rich-text .task-list-item input {
+  margin-right: 8px;
+}
+.rich-text h1,
+.rich-text h2,
+.rich-text h3,
+.rich-text h4 {
+  line-height: 1.35;
+  margin: 20px 0 10px;
+}

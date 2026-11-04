@@ -202,6 +202,19 @@ Saving the origin never publishes by itself. A checkpoint validates trackers, co
 
 The data repository is separate from this public application repository. Never attach a private tracker-data origin to the app source repository or commit real task evidence into the app. Disconnect the data origin in global settings to return to local-only checkpoints.
 
+## Stack logos and work icons
+
+Petal bundles hundreds of minified Simple Icons brand logos and Lucide work symbols, including PostHog, GitHub, Docker, Next.js, servers, databases, testing, security, and bug variants. Assets load individually from the local app; no icon CDN is needed. Each collection gets a stable CSS tint, so files sharing the same logo remain visually distinct in both themes.
+
+```sh
+petal icons list --search posthog
+petal icons list --search bug
+petal icons set --project PROJECT_ID --file data/bug.analytics.json --icon brand-posthog
+petal icons auto --project PROJECT_ID
+```
+
+`set` changes only the selected collection’s icon metadata; `auto` replaces all collection icon choices using filenames and task titles. Neither commits nor pushes. Existing explicit icon choices take precedence over automatic display inference. The installed skill explains how agents find and choose relevant icons. See [catalog, generation, and attribution](icons/README.md).
+
 ## Notifications
 
 The bell keeps the latest 200 observed status changes and to-do completion/reopening updates across workspaces. Its popover opens on the current workspace, with All and other workspace tabs. Each workspace gets an accent color and an automatically assigned sound; choose among six sounds in its tab or mute globally.

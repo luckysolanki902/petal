@@ -30,3 +30,15 @@ Maintain `progress` as an integer 0–100 based on completed scope and verificat
 Keep user comments, arbitrary nested evidence, IDs, and creation dates intact. The CLI manages lifecycle timestamps. Patch findings into `rootCause`, implementation into `howFixed`, and verification into `retestingSummary` / `retestingFindings`. Update only rows within the current task's scope. Never delete unrelated rows, checkpoint, push, publish, or change another project merely to keep a tracker tidy.
 
 If Petal fails, report the exact operation and error. Do not bypass its validation with whole-file rewrites. The skill does not grant permissions beyond the user's request. Cloud-only ChatGPT or Claude sessions cannot use the local CLI without a supported local connection; do not claim an installation grants that access.
+
+## Choose meaningful collection icons
+
+Petal bundles hundreds of optimized, local Simple Icons logos and Lucide work symbols. When creating or organizing collections, choose a recognizable logo for an actual provider/stack (PostHog, GitHub, Docker, Next.js, databases, etc.), or a fitting work symbol (bug variants, server, testing, security, migration, notifications). Base the choice on inspected filenames and work; do not invent provider associations.
+
+- Search: `petal icons list --search posthog` or `petal icons list --search bug`. The JSON includes catalog IDs, asset paths, kinds, and provenance.
+- Assign: `petal icons set --project ID --file data/ACTUAL_FILE.json --icon brand-posthog`. Use a file path returned by task list and a catalog ID returned by icons list. These commands update only the existing icon metadata, not rows, evidence, dates, statuses, or workflow configuration.
+- Reassign all collections when requested: `petal icons auto --project ID`. This replaces collection icon choices based on filenames and bounded task-title context. Use individual `set` commands for deliberate overrides; do not run `auto` after carefully setting overrides unless the user wants them replaced.
+- New collections using generic icons also receive automatic display inference. Explicit assignments remain authoritative.
+- One SVG can serve several files: CSS masks derive a stable hue from each collection’s path and adjust luminance for light/dark mode. Never duplicate or recolor SVG assets merely to distinguish collections. Preserve the `{ "data/path.json": { "icon": "icons/brand-posthog.svg" } }` metadata structure and unrelated entries.
+
+Icon assignment never commits or pushes. Respect the user’s publication instructions for private workspace data separately from the public Petal app. After updating the Petal skill bundle, `petal setup` refreshes managed agent installations.

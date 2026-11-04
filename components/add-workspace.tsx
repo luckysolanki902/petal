@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Plus, X, FolderPlus, Sparkles } from "lucide-react";
 export default function AddWorkspace({
   disabled = false,
@@ -9,6 +9,7 @@ export default function AddWorkspace({
   first?: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const id = useId();
   const [open, setOpen] = useState(false),
     [name, setName] = useState(""),
     [root, setRoot] = useState("");
@@ -79,9 +80,9 @@ export default function AddWorkspace({
             for each workspace, with JSON stored in your shared Petal data
             repository.
           </p>
-          <label htmlFor="workspace-name">Workspace name</label>
+          <label htmlFor={`${id}-name`}>Workspace name</label>
           <input
-            id="workspace-name"
+            id={`${id}-name`}
             required
             maxLength={120}
             value={name}
@@ -90,9 +91,9 @@ export default function AddWorkspace({
             disabled={busy}
             autoFocus
           />
-          <label htmlFor="workspace-root">Project folder · full path</label>
+          <label htmlFor={`${id}-root`}>Project folder · full path</label>
           <input
-            id="workspace-root"
+            id={`${id}-root`}
             required
             value={root}
             onChange={(e) => setRoot(e.target.value)}

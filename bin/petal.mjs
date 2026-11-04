@@ -97,10 +97,28 @@ async function register(root, dataDir, name) {
 }
 
 async function init() {
+  await fs.mkdir(HOME, { recursive: true });
+  const lock = path.join(HOME, "setup.lock");
+  try {
+    await fs.mkdir(lock);
+  } catch (error) {
+    if (error.code === "EEXIST")
+      throw new Error("Another workspace setup is running. Retry shortly.");
+    throw error;
+  }
+  try {
+    return await initWorkspace();
+  } finally {
+    await fs.rm(lock, { recursive: true, force: true });
+  }
+}
+async function initWorkspace() {
   const target = path.resolve(
     args[1] && !args[1].startsWith("-") ? args[1] : ".",
   );
   const root = await fs.realpath(target);
+  if (!(await fs.stat(root)).isDirectory())
+    throw new Error("Workspace root must be a directory.");
   const existing = (await projects()).find((p) => p.root === root);
   if (existing) {
     await agentFiles(root);
@@ -177,6 +195,16 @@ async function agentFiles(root) {
       const temp = file + "." + randomUUID() + ".tmp";
       try {
         await fs.writeFile(temp, after, { mode: 0o644, flag: "wx" });
+        let current = "";
+        try {
+          current = await fs.readFile(file, "utf8");
+        } catch (error) {
+          if (error.code !== "ENOENT") throw error;
+        }
+        if (current !== before)
+          throw new Error(
+            `${file} changed during setup; retry to preserve its latest instructions.`,
+          );
         await fs.rename(temp, file);
       } finally {
         await fs.rm(temp, { force: true });

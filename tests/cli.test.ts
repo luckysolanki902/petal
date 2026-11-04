@@ -18,6 +18,25 @@ test("CLI registers multiple isolated projects and updates only the requested pr
     await fs.mkdir(root);
     await run("init", root, "--name", name);
   }
+  const agentHome = path.join(dir, "agent-home");
+  await exec(process.execPath, [cli, "setup"], {
+    env: {
+      ...env,
+      HOME: agentHome,
+      USERPROFILE: agentHome,
+      CLAUDE_CONFIG_DIR: path.join(agentHome, ".claude"),
+      XDG_CONFIG_HOME: path.join(agentHome, ".config"),
+    },
+  });
+  for (const skill of [
+    ".claude/skills/petal/SKILL.md",
+    ".agents/skills/petal/SKILL.md",
+    ".config/opencode/skills/petal/SKILL.md",
+  ])
+    assert.match(
+      await fs.readFile(path.join(agentHome, skill), "utf8"),
+      /Yes \/ No/,
+    );
   const list = JSON.parse((await run("projects")).stdout);
   assert.equal(list.length, 2);
   await assert.rejects(

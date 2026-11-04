@@ -118,6 +118,10 @@ export default function Notifications({
         gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
         o.connect(gain);
         gain.connect(ctx.destination);
+        o.onended = () => {
+          o.disconnect();
+          gain.disconnect();
+        };
         o.start(start);
         o.stop(start + 0.32);
       });

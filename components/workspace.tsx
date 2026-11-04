@@ -313,6 +313,10 @@ export default function ProgressWorkspace() {
     setHighlight({ file, id });
   }
   function openNotice(n: Notice) {
+    if (!data?.projects.some((p) => p.id === n.project)) {
+      setMessage("This notification’s workspace is no longer registered.");
+      return;
+    }
     if (n.project !== data?.project.id) {
       window.location.href = noticeURL(n);
       return;

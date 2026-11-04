@@ -222,3 +222,23 @@ test("to-do category edits use revision checks and preserve lifecycle dates", as
     ]),
   );
 });
+
+test("single confirmed deletion returns a revision and preserves unrelated rows and evidence", async (t) => {
+  const { store } = await fixture(t);
+  await store.addTask("data/todo.json", "Keep this row", "General");
+  const before = (await store.workspace()).files.find(
+    (f) => f.path === "data/todo.json",
+  )!;
+  const keep = before.rows.find((r) => r.id !== "T1")!;
+  const saved = await store.save(before.path, before.revision, [
+    { id: "T1", delete: true },
+  ]);
+  const after = (await store.workspace()).files.find(
+    (f) => f.path === before.path,
+  )!;
+  assert.equal(saved.revision, after.revision);
+  assert.deepEqual(after.rows, [keep]);
+  await assert.rejects(
+    store.save(before.path, before.revision, [{ id: keep.id, delete: true }]),
+  );
+});

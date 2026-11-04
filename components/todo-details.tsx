@@ -1,10 +1,11 @@
+import type { ReactNode } from "react";
 import SelectMenu from "./select-menu";
 import CustomFields from "./custom-fields";
 import {
   DEFAULT_CONFIGURATION,
   type ProjectConfiguration,
 } from "../lib/project-config";
-import { Check, Trash2 } from "lucide-react";
+import { Check } from "lucide-react";
 import { DetailValue, dateLabel } from "./detail-value";
 import type { Row } from "../lib/model";
 type Props = {
@@ -19,8 +20,7 @@ type Props = {
   onToggle: () => void;
   onNote: (value: string) => void;
   onSave: () => void;
-  onDelete: () => void;
-  onUndo: () => void;
+  deleteControl: ReactNode;
 };
 const core = new Set([
   "id",
@@ -51,8 +51,7 @@ export default function TodoDetails({
   onToggle,
   onNote,
   onSave,
-  onDelete,
-  onUndo,
+  deleteControl,
 }: Props) {
   const details = Object.entries(row).filter(
     ([key]) =>
@@ -171,14 +170,7 @@ export default function TodoDetails({
         )}
       </dl>
       <div className="todo-panel-actions">
-        <button
-          className="text-button"
-          disabled={busy}
-          onClick={deleted ? onUndo : onDelete}
-        >
-          {!deleted && <Trash2 size={14} />}{" "}
-          {deleted ? "Undo deletion" : "Delete item"}
-        </button>
+        {deleteControl}
         {dirty && (
           <button className="button primary" disabled={busy} onClick={onSave}>
             Save changes

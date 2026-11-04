@@ -119,7 +119,7 @@ Each item can also have an AI-maintained percentage, remaining-time estimate, an
 - Switch collections with icon chips; keep the overview across all work when that is more useful.
 - Click a row to see findings, references, arbitrary nested evidence, timestamps, and notes.
 - Check a to-do once to save immediately. No confirmation dialog.
-- Delete an individual item without a dialog, undo on its row, then review the final Save/Discard confirmation to persist.
+- In the table, stage individual deletions with row undo, then review Save/Discard to persist. In the sidebar, Delete item opens an inline Yes/No confirmation; Yes immediately saves only that item’s deletion and keeps other drafts untouched.
 - Bulk deletion includes hidden completed rows in the disclosed scope; it confirms before staging.
 - Drafts survive reloads in the same browser session. Revision conflicts keep the draft and reject stale writes; review the latest evidence before discarding/reapplying it.
 - Project switching is disabled while drafts are pending. Save or discard first.

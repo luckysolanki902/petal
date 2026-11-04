@@ -551,7 +551,12 @@ export function createStore(root: string, repositoryRoot: string = root) {
       const next = rows.filter((r) => !deleteIds.has(r.id));
       await validate(next, file);
       await atomic(resolved, next);
-      return { ok: true, file, rows: next.length };
+      return {
+        ok: true,
+        file,
+        rows: next.length,
+        revision: digest(await fs.readFile(resolved, "utf8")),
+      };
     });
   }
   // Compatibility endpoint for callers of the previous local server. Optimistic base required.

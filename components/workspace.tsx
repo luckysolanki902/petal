@@ -29,6 +29,8 @@ import CategoryBadge, { categoryStyle } from "./category-badge";
 import SelectMenu from "./select-menu";
 import AddWorkspace from "./add-workspace";
 import TodoDetails from "./todo-details";
+import SidebarDelete from "./sidebar-delete";
+import { afterSidebarDelete, type Drafts } from "../lib/drafts";
 import { DetailValue, dateLabel } from "./detail-value";
 import {
   TODO,
@@ -40,7 +42,6 @@ import {
   type Status,
   type TrackerFile,
 } from "../lib/model";
-type Drafts = Record<string, { revision: string; edits: Record<string, Edit> }>;
 type Selection = { file: string; id: string };
 const labels: Record<string, string> = {
   rootCause: "Findings",
@@ -501,6 +502,44 @@ export default function ProgressWorkspace() {
             : previous,
         );
       setMessage(row.done ? "Moved back to your to-do list." : "Marked done.");
+    });
+  }
+  async function deleteSidebarItem(file: TrackerFile, row: Row) {
+    await run(async () => {
+      const expected = drafts[file.path]?.revision ?? file.revision;
+      const result = await api<{ revision: string }>("/__save", {
+        file: file.path,
+        revision: expected,
+        edits: [{ id: row.id, delete: true }],
+      });
+      setDrafts((previous) =>
+        afterSidebarDelete(
+          previous,
+          file.path,
+          row.id,
+          expected,
+          result.revision,
+        ),
+      );
+      setData((previous) =>
+        previous
+          ? {
+              ...previous,
+              files: previous.files.map((f) =>
+                f.path === file.path
+                  ? {
+                      ...f,
+                      rows: f.rows.filter((r) => r.id !== row.id),
+                      revision: result.revision,
+                    }
+                  : f,
+              ),
+            }
+          : previous,
+      );
+      setSelected(null);
+      setMessage(`${row.id} deleted. Other drafts were not saved or deleted.`);
+      await refresh();
     });
   }
   function deleteRow(file: TrackerFile, row: Row) {
@@ -1197,8 +1236,16 @@ export default function ProgressWorkspace() {
                   stage(selectedFile, selectedRow.id, { comments })
                 }
                 onSave={requestSave}
-                onDelete={() => deleteRow(selectedFile, selectedRow)}
-                onUndo={() => undoRow(selectedFile.path, selectedRow.id)}
+                deleteControl={
+                  <SidebarDelete
+                    key={`${selectedFile.path}:${selectedRow.id}`}
+                    id={selectedRow.id}
+                    busy={busy}
+                    onConfirm={() =>
+                      void deleteSidebarItem(selectedFile, selectedRow)
+                    }
+                  />
+                }
               />
             ) : (
               <>
@@ -1376,24 +1423,14 @@ export default function ProgressWorkspace() {
                       Save changes
                     </button>
                   )}
-                  {drafts[selectedFile.path]?.edits[selectedRow.id]?.delete ? (
-                    <button
-                      className="button"
-                      disabled={busy}
-                      onClick={() => undoRow(selectedFile.path, selectedRow.id)}
-                    >
-                      Undo deletion
-                    </button>
-                  ) : (
-                    <button
-                      className="text-button"
-                      disabled={busy}
-                      onClick={() => deleteRow(selectedFile, selectedRow)}
-                    >
-                      <Trash2 size={14} />
-                      Delete this item
-                    </button>
-                  )}
+                  <SidebarDelete
+                    key={`${selectedFile.path}:${selectedRow.id}`}
+                    id={selectedRow.id}
+                    busy={busy}
+                    onConfirm={() =>
+                      void deleteSidebarItem(selectedFile, selectedRow)
+                    }
+                  />
                 </div>
               </>
             )

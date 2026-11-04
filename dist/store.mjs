@@ -705,7 +705,12 @@ function createStore(root, repositoryRoot = root) {
       const next = rows.filter((r) => !deleteIds.has(r.id));
       await validate(next, file);
       await atomic(resolved, next);
-      return { ok: true, file, rows: next.length };
+      return {
+        ok: true,
+        file,
+        rows: next.length,
+        revision: digest(await fs.readFile(resolved, "utf8")),
+      };
     });
   }
   async function saveRows(file, rows, baseRows) {

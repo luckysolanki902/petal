@@ -3208,3 +3208,30 @@ textarea {
 .first-workspace {
   padding: 48px 0;
 }
+
+.sidebar-delete-confirm {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+}
+.sidebar-delete-confirm p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 8px 0 16px;
+}
+.sidebar-delete-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.todo-panel-actions:has(.sidebar-delete-confirm),
+.drawer-bottom:has(.sidebar-delete-confirm) {
+  flex-wrap: wrap;
+}
+.todo-panel-actions:has(.sidebar-delete-confirm) > .button.primary,
+.drawer-bottom:has(.sidebar-delete-confirm) > .button.primary {
+  display: none;
+}

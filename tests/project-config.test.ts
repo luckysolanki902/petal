@@ -139,7 +139,7 @@ test("invalid configuration never writes, and completion rule changes normalize 
     {
       categories: [
         { name: "Duplicate", color: 2 },
-        { name: "duplicate", color: 3 },
+        { name: "Duplicate", color: 3 },
       ],
     },
   ]) {
@@ -247,4 +247,27 @@ test("renaming an unfinished status preserves agent-assessed progress", async (t
       .progress,
     100,
   );
+});
+
+test("categories already used by rows appear in Settings with matching colors", async () => {
+  const { categoriesForSettings, categoryHue } =
+    await import("../lib/category-colors");
+  const saved = [{ name: "Work", color: 150 }],
+    used = ["Admin-fix", "Work", "Personal", "Personal", "work"];
+  const draft = categoriesForSettings(saved, used);
+  assert.deepEqual(
+    draft.map((c) => c.name),
+    ["Work", "Admin-fix", "Personal", "work"],
+  );
+  assert.equal(draft.find((c) => c.name === "Work")!.color, 150);
+  assert.equal(
+    draft.find((c) => c.name === "Admin-fix")!.color,
+    categoryHue("Admin-fix"),
+  );
+  assert.deepEqual(saved, [{ name: "Work", color: 150 }]);
+  const config = {
+    ...structuredClone(DEFAULT_CONFIGURATION),
+    categories: draft,
+  };
+  assert.deepEqual(configurationErrors(config), []);
 });

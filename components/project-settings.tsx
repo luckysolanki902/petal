@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { categoriesForSettings } from "../lib/category-colors";
 import CategoryBadge from "./category-badge";
 import SelectMenu from "./select-menu";
 import type { ProjectConfiguration } from "../lib/project-config";
@@ -62,7 +63,13 @@ export default function ProjectSettings({
         "/api/project-configuration",
       );
       setBase(result);
-      setDraft(structuredClone(result.configuration));
+      setDraft({
+        ...structuredClone(result.configuration),
+        categories: categoriesForSettings(
+          result.configuration.categories,
+          categories,
+        ),
+      });
       setMapping({});
       setPreview(null);
     } catch (e) {
@@ -171,7 +178,13 @@ export default function ProjectSettings({
                   source: { name: string };
                 }>("/api/project-configuration-import", { sourceProject })
                   .then((result) => {
-                    change(structuredClone(result.configuration));
+                    change({
+                      ...structuredClone(result.configuration),
+                      categories: categoriesForSettings(
+                        result.configuration.categories,
+                        categories,
+                      ),
+                    });
                     setMapping({});
                     setMessage(
                       `Imported from ${result.source.name} into this draft. Review changes to continue.`,
@@ -400,7 +413,6 @@ export default function ProjectSettings({
             <input
               aria-label={`Category ${i + 1} name`}
               value={category.name}
-              maxLength={60}
               onChange={(e) =>
                 change({
                   ...draft,
@@ -455,29 +467,6 @@ export default function ProjectSettings({
             <Plus size={14} />
             Add category
           </button>
-          {categories.some(
-            (name) => !draft.categories.some((c) => c.name === name),
-          ) && (
-            <button
-              className="button"
-              onClick={() =>
-                change({
-                  ...draft,
-                  categories: [
-                    ...draft.categories,
-                    ...categories
-                      .filter(
-                        (name) =>
-                          !draft.categories.some((c) => c.name === name),
-                      )
-                      .map((name, i) => ({ name, color: (i * 59 + 32) % 360 })),
-                  ],
-                })
-              }
-            >
-              Import current categories
-            </button>
-          )}
         </div>
       </fieldset>
       <fieldset disabled={locked} hidden={section !== "fields"}>

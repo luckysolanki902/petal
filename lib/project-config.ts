@@ -74,14 +74,16 @@ export function configurationErrors(input: unknown): string[] {
         typeof row !== "object" ||
         typeof row.name !== "string" ||
         !row.name.trim() ||
-        row.name !== row.name.trim() ||
-        row.name.length > 60 ||
-        used.has(row.name.toLowerCase())
+        (kind === "Status" &&
+          (row.name !== row.name.trim() || row.name.length > 60)) ||
+        used.has(kind === "Status" ? row.name.toLowerCase() : row.name)
       )
         errors.push(
-          `${kind} names must be unique, trimmed text (1–60 characters).`,
+          kind === "Status"
+            ? "Status names must be unique, trimmed text (1–60 characters)."
+            : "Category names must be unique nonempty text.",
         );
-      else used.add(row.name.toLowerCase());
+      else used.add(kind === "Status" ? row.name.toLowerCase() : row.name);
       if (!Number.isInteger(row?.color) || row.color < 0 || row.color > 360)
         errors.push(`${kind} colors must be a hue from 0–360.`);
     }

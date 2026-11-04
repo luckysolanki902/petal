@@ -366,48 +366,6 @@ export default function ProjectSettings({
           Errands. Categories appear as filter chips above your to-do list and
           colored badges in its table and sidebar.
         </p>
-        <div className="category-location-preview">
-          <span className="preview-caption">
-            Example · above your to-do list
-          </span>
-          <div className="preview-chips">
-            <span>All categories</span>
-            {(draft.categories.length
-              ? draft.categories.slice(0, 3)
-              : [
-                  { name: "Work", color: 220 },
-                  { name: "Personal", color: 270 },
-                ]
-            ).map((c) => (
-              <CategoryBadge
-                key={c.name}
-                category={c.name || "Category"}
-                categories={
-                  draft.categories.length
-                    ? draft.categories
-                    : [
-                        { name: "Work", color: 220 },
-                        { name: "Personal", color: 270 },
-                      ]
-                }
-              />
-            ))}
-          </div>
-          <div className="preview-todo">
-            <span>Example to-do</span>
-            <CategoryBadge
-              category={draft.categories[0]?.name || "Work"}
-              categories={
-                draft.categories.length
-                  ? draft.categories
-                  : [{ name: "Work", color: 220 }]
-              }
-            />
-          </div>
-          <span className="preview-caption">
-            The same badge appears in the item’s sidebar.
-          </span>
-        </div>
         {draft.categories.map((category, i) => (
           <div className="config-category" key={i}>
             <input
@@ -468,6 +426,52 @@ export default function ProjectSettings({
             Add category
           </button>
         </div>
+        <details
+          className="category-location-preview"
+          open={draft.categories.length === 0}
+        >
+          <summary>Where categories appear</summary>
+          <span className="preview-caption">
+            Example · above your to-do list
+          </span>
+          <div className="preview-chips">
+            <span>All categories</span>
+            {(draft.categories.length
+              ? draft.categories.slice(0, 3)
+              : [
+                  { name: "Work", color: 220 },
+                  { name: "Personal", color: 270 },
+                ]
+            ).map((c) => (
+              <CategoryBadge
+                key={c.name}
+                category={c.name || "Category"}
+                categories={
+                  draft.categories.length
+                    ? draft.categories
+                    : [
+                        { name: "Work", color: 220 },
+                        { name: "Personal", color: 270 },
+                      ]
+                }
+              />
+            ))}
+          </div>
+          <div className="preview-todo">
+            <span>Example to-do</span>
+            <CategoryBadge
+              category={draft.categories[0]?.name || "Work"}
+              categories={
+                draft.categories.length
+                  ? draft.categories
+                  : [{ name: "Work", color: 220 }]
+              }
+            />
+          </div>
+          <span className="preview-caption">
+            The same badge appears in the item’s sidebar.
+          </span>
+        </details>
       </fieldset>
       <fieldset disabled={locked} hidden={section !== "fields"}>
         <legend>Custom fields</legend>

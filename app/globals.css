@@ -3074,3 +3074,11 @@ textarea {
 .config-import-controls .select-control {
   min-width: 180px;
 }
+.category-location-preview summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+}
+.category-location-preview[open] > summary {
+  margin-bottom: 12px;
+}

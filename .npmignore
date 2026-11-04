@@ -1,0 +1,17 @@
+.next/cache/
+.next/dev/
+.next/trace
+.next/trace-build
+.next/diagnostics/
+.next/types/
+**/*.tsbuildinfo
+.env*
+
+**/*.map
+.next/*.json
+!.next/routes-manifest.json
+!.next/prerender-manifest.json
+!.next/build-manifest.json
+!.next/app-build-manifest.json
+!.next/required-server-files.json
+!.next/package.json

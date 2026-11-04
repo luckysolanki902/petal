@@ -1,0 +1,57 @@
+{
+  "name": "petal-workspace",
+  "version": "0.1.0",
+  "private": false,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 8766",
+    "build": "node build-validator.cjs && next build && esbuild lib/store.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/store.mjs && esbuild lib/vault.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/vault.mjs",
+    "start": "next start --hostname 127.0.0.1 --port 8766",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "validate": "node validate.cjs",
+    "format": "prettier --write",
+    "build:validator": "node build-validator.cjs",
+    "prepack": "npm run build"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "lucide-react": "^1.68.0",
+    "next": "^16.4.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "esbuild": "^0.28.2",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "description": "A calm, local-first project workspace for you and your coding agents.",
+  "bin": {
+    "petal": "bin/petal.mjs"
+  },
+  "license": "MIT",
+  "files": [
+    "app",
+    "components",
+    "lib",
+    "dist",
+    "bin",
+    "skills",
+    "icons",
+    "tracker.schema.json",
+    "tracker-validator.js",
+    "next.config.ts",
+    ".next",
+    "README.md",
+    "LICENSE"
+  ]
+}

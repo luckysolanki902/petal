@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://petal.local/tracker.schema.json",
+  "title": "Petal project tracker",
+  "description": "Petal project work and to-do contract. Regenerate with npm run build:validator.",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/row"
+  },
+  "$defs": {
+    "status": {
+      "type": "string",
+      "enum": ["To do", "Doing", "Waiting", "Done"],
+      "description": "To do: not started. Doing: investigation, implementation or verification underway, including partial fixes. Waiting: needs a decision or external dependency; explain in statusDetail. Done: no remaining action, including deliberate closure; preserve the outcome in statusDetail.",
+      "x-ui": {
+        "To do": {
+          "tone": "gray",
+          "since": "Opened"
+        },
+        "Doing": {
+          "tone": "orange",
+          "since": "Started"
+        },
+        "Waiting": {
+          "tone": "yellow",
+          "since": "Waiting since"
+        },
+        "Done": {
+          "tone": "green",
+          "since": "Completed"
+        }
+      }
+    },
+    "row": {
+      "type": "object",
+      "required": ["id", "status", "statusAt", "createdAt"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "Stable identifier, unique within its file; never renumber during cleanup."
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "statusDetail": {
+          "type": "string",
+          "description": "Explanatory status text only; no new lifecycle categories or suffixes in status."
+        },
+        "statusAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp with timezone. Preserve historical timestamps during label normalization."
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["Critical", "High", "Medium", "Low"],
+          "description": "Impact level; no emoji prefixes."
+        },
+        "bug": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "task": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "rootCause": {
+          "type": "string"
+        },
+        "howFixed": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "verification": {
+          "type": "string"
+        },
+        "limitations": {
+          "type": "string"
+        },
+        "retestingSummary": {
+          "type": "string",
+          "description": "Free-text retest summary. Replaces the misleading legacy retestingStatus field; it is not a second lifecycle status."
+        },
+        "retestingFindings": {
+          "type": "string"
+        },
+        "referenceChecklist": {
+          "type": "string"
+        },
+        "comments": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "section": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "Single organizational section. Admin-fix replaces the retired type=Admin fix classification; do not add a separate type column."
+        },
+        "report": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "reportState": {
+          "type": "string",
+          "enum": ["OPEN", "CLOSED"],
+          "description": "External issue state; distinct from tracker lifecycle status."
+        },
+        "researchSources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          }
+        },
+        "pullRequests": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_-]*$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          }
+        },
+        "createdAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "When the row was opened. Immutable across status changes. Null only for legacy rows with no reliable creation date; do not substitute statusAt or a first-tracked commit date."
+        },
+        "doneAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Todo completion time, null until completed. Never invent a historical completion time."
+        },
+        "est": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Estimated time as written for a person, for example 45 min or 2h."
+        },
+        "difficulty": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Difficulty from 1 (trivial) to 100 (hardest)."
+        },
+        "progress": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage done, 0-100. A done todo is 100; this records partial progress while it is still open."
+        }
+      },
+      "additionalProperties": true,
+      "anyOf": [
+        {
+          "required": ["bug"]
+        },
+        {
+          "required": ["task"]
+        }
+      ],
+      "description": "Known fields retain their typed validation. Arbitrary extra properties may contain any JSON value and are displayed only in the row details sidebar, never added as table columns."
+    },
+    "todoItem": {
+      "type": "object",
+      "required": ["id", "task", "category", "createdAt", "doneAt", "done"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "Stable identifier, unique within its file; never renumber during cleanup."
+        },
+        "task": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "Organizational category for the todo. Free-form so a new group never invalidates the file; todo.json uses category instead of the lifecycle status section used by bug/feature files."
+        },
+        "createdAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "When the todo was opened. Immutable across completion changes. Null only for legacy rows with no reliable creation date."
+        },
+        "done": {
+          "type": "boolean",
+          "description": "Whether the todo is complete. The only state a todo has; there is no lifecycle status, statusAt or statusDetail."
+        },
+        "doneAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Completion time, null until done becomes true. Never invent a historical completion time."
+        },
+        "est": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Estimated time as written for a person, for example 45 min or 2h."
+        },
+        "difficulty": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Difficulty from 1 (trivial) to 100 (hardest)."
+        },
+        "progress": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage done, 0-100. A done todo is 100; this records partial progress while it is still open."
+        },
+        "comments": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "additionalProperties": true,
+      "if": {
+        "required": ["done"],
+        "properties": {
+          "done": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": ["doneAt"],
+        "properties": {
+          "doneAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "doneAt": {
+            "type": "null"
+          }
+        }
+      },
+      "description": "A to-do row: done or not done, with optional estimate, difficulty and progress. Known fields keep their types; arbitrary extra properties stay valid and are shown only in the sidebar."
+    },
+    "todoFile": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/todoItem"
+      }
+    }
+  }
+}

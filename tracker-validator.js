@@ -316,8 +316,7 @@ var ProgressTrackerSchema = (() => {
             type: "string",
             minLength: 1,
             pattern: "\\S",
-            description:
-              "Single organizational section. Admin-fix replaces the retired type=Admin fix classification; do not add a separate type column.",
+            description: "Optional project-defined organizational section.",
           },
           report: { type: "string", format: "uri", pattern: "^https://" },
           reportState: {
@@ -376,22 +375,10 @@ var ProgressTrackerSchema = (() => {
         description:
           "Known fields retain their typed validation. Arbitrary extra properties may contain any JSON value and are displayed only in the row details sidebar, never added as table columns.",
       };
-      var schema33 = {
-        type: "string",
-        enum: ["To do", "Doing", "Waiting", "Done"],
-        description:
-          "To do: not started. Doing: investigation, implementation or verification underway, including partial fixes. Waiting: needs a decision or external dependency; explain in statusDetail. Done: no remaining action, including deliberate closure; preserve the outcome in statusDetail.",
-        "x-ui": {
-          "To do": { tone: "gray", since: "Opened" },
-          Doing: { tone: "orange", since: "Started" },
-          Waiting: { tone: "yellow", since: "Waiting since" },
-          Done: { tone: "green", since: "Completed" },
-        },
-      };
       var func1 = require_ucs2length().default;
       var pattern4 = new RegExp("\\S", "u");
-      var pattern8 = new RegExp("^https://", "u");
-      var pattern10 = new RegExp("^[a-z][a-z0-9_-]*$", "u");
+      var pattern9 = new RegExp("^https://", "u");
+      var pattern11 = new RegExp("^[a-z][a-z0-9_-]*$", "u");
       var formats0 = require_formats().fullFormats["date-time"];
       var formats2 = require_formats().fullFormats.uri;
       function validate21(
@@ -591,47 +578,41 @@ var ProgressTrackerSchema = (() => {
           }
           if (data.status !== void 0) {
             let data1 = data.status;
-            if (typeof data1 !== "string") {
-              const err10 = {
+            if (typeof data1 === "string") {
+              if (func1(data1) < 1) {
+                const err10 = {
+                  instancePath: instancePath + "/status",
+                  schemaPath: "#/$defs/status/minLength",
+                  keyword: "minLength",
+                  params: { limit: 1 },
+                  message: "must NOT have fewer than 1 characters",
+                };
+                if (vErrors === null) {
+                  vErrors = [err10];
+                } else {
+                  vErrors.push(err10);
+                }
+                errors++;
+              }
+              if (!pattern4.test(data1)) {
+                const err11 = {
+                  instancePath: instancePath + "/status",
+                  schemaPath: "#/$defs/status/pattern",
+                  keyword: "pattern",
+                  params: { pattern: "\\S" },
+                  message: 'must match pattern "\\S"',
+                };
+                if (vErrors === null) {
+                  vErrors = [err11];
+                } else {
+                  vErrors.push(err11);
+                }
+                errors++;
+              }
+            } else {
+              const err12 = {
                 instancePath: instancePath + "/status",
                 schemaPath: "#/$defs/status/type",
-                keyword: "type",
-                params: { type: "string" },
-                message: "must be string",
-              };
-              if (vErrors === null) {
-                vErrors = [err10];
-              } else {
-                vErrors.push(err10);
-              }
-              errors++;
-            }
-            if (!(
-              data1 === "To do" ||
-              data1 === "Doing" ||
-              data1 === "Waiting" ||
-              data1 === "Done"
-            )) {
-              const err11 = {
-                instancePath: instancePath + "/status",
-                schemaPath: "#/$defs/status/enum",
-                keyword: "enum",
-                params: { allowedValues: schema33.enum },
-                message: "must be equal to one of the allowed values",
-              };
-              if (vErrors === null) {
-                vErrors = [err11];
-              } else {
-                vErrors.push(err11);
-              }
-              errors++;
-            }
-          }
-          if (data.statusDetail !== void 0) {
-            if (typeof data.statusDetail !== "string") {
-              const err12 = {
-                instancePath: instancePath + "/statusDetail",
-                schemaPath: "#/properties/statusDetail/type",
                 keyword: "type",
                 params: { type: "string" },
                 message: "must be string",
@@ -644,11 +625,28 @@ var ProgressTrackerSchema = (() => {
               errors++;
             }
           }
+          if (data.statusDetail !== void 0) {
+            if (typeof data.statusDetail !== "string") {
+              const err13 = {
+                instancePath: instancePath + "/statusDetail",
+                schemaPath: "#/properties/statusDetail/type",
+                keyword: "type",
+                params: { type: "string" },
+                message: "must be string",
+              };
+              if (vErrors === null) {
+                vErrors = [err13];
+              } else {
+                vErrors.push(err13);
+              }
+              errors++;
+            }
+          }
           if (data.statusAt !== void 0) {
             let data3 = data.statusAt;
             if (typeof data3 === "string") {
               if (!formats0.validate(data3)) {
-                const err13 = {
+                const err14 = {
                   instancePath: instancePath + "/statusAt",
                   schemaPath: "#/properties/statusAt/format",
                   keyword: "format",
@@ -656,34 +654,16 @@ var ProgressTrackerSchema = (() => {
                   message: 'must match format "date-time"',
                 };
                 if (vErrors === null) {
-                  vErrors = [err13];
+                  vErrors = [err14];
                 } else {
-                  vErrors.push(err13);
+                  vErrors.push(err14);
                 }
                 errors++;
               }
             } else {
-              const err14 = {
+              const err15 = {
                 instancePath: instancePath + "/statusAt",
                 schemaPath: "#/properties/statusAt/type",
-                keyword: "type",
-                params: { type: "string" },
-                message: "must be string",
-              };
-              if (vErrors === null) {
-                vErrors = [err14];
-              } else {
-                vErrors.push(err14);
-              }
-              errors++;
-            }
-          }
-          if (data.severity !== void 0) {
-            let data4 = data.severity;
-            if (typeof data4 !== "string") {
-              const err15 = {
-                instancePath: instancePath + "/severity",
-                schemaPath: "#/properties/severity/type",
                 keyword: "type",
                 params: { type: "string" },
                 message: "must be string",
@@ -695,18 +675,16 @@ var ProgressTrackerSchema = (() => {
               }
               errors++;
             }
-            if (!(
-              data4 === "Critical" ||
-              data4 === "High" ||
-              data4 === "Medium" ||
-              data4 === "Low"
-            )) {
+          }
+          if (data.severity !== void 0) {
+            let data4 = data.severity;
+            if (typeof data4 !== "string") {
               const err16 = {
                 instancePath: instancePath + "/severity",
-                schemaPath: "#/properties/severity/enum",
-                keyword: "enum",
-                params: { allowedValues: schema32.properties.severity.enum },
-                message: "must be equal to one of the allowed values",
+                schemaPath: "#/properties/severity/type",
+                keyword: "type",
+                params: { type: "string" },
+                message: "must be string",
               };
               if (vErrors === null) {
                 vErrors = [err16];
@@ -715,32 +693,37 @@ var ProgressTrackerSchema = (() => {
               }
               errors++;
             }
+            if (!(
+              data4 === "Critical" ||
+              data4 === "High" ||
+              data4 === "Medium" ||
+              data4 === "Low"
+            )) {
+              const err17 = {
+                instancePath: instancePath + "/severity",
+                schemaPath: "#/properties/severity/enum",
+                keyword: "enum",
+                params: { allowedValues: schema32.properties.severity.enum },
+                message: "must be equal to one of the allowed values",
+              };
+              if (vErrors === null) {
+                vErrors = [err17];
+              } else {
+                vErrors.push(err17);
+              }
+              errors++;
+            }
           }
           if (data.bug !== void 0) {
             let data5 = data.bug;
             if (typeof data5 === "string") {
               if (func1(data5) < 1) {
-                const err17 = {
+                const err18 = {
                   instancePath: instancePath + "/bug",
                   schemaPath: "#/properties/bug/minLength",
                   keyword: "minLength",
                   params: { limit: 1 },
                   message: "must NOT have fewer than 1 characters",
-                };
-                if (vErrors === null) {
-                  vErrors = [err17];
-                } else {
-                  vErrors.push(err17);
-                }
-                errors++;
-              }
-              if (!pattern4.test(data5)) {
-                const err18 = {
-                  instancePath: instancePath + "/bug",
-                  schemaPath: "#/properties/bug/pattern",
-                  keyword: "pattern",
-                  params: { pattern: "\\S" },
-                  message: 'must match pattern "\\S"',
                 };
                 if (vErrors === null) {
                   vErrors = [err18];
@@ -749,8 +732,23 @@ var ProgressTrackerSchema = (() => {
                 }
                 errors++;
               }
+              if (!pattern4.test(data5)) {
+                const err19 = {
+                  instancePath: instancePath + "/bug",
+                  schemaPath: "#/properties/bug/pattern",
+                  keyword: "pattern",
+                  params: { pattern: "\\S" },
+                  message: 'must match pattern "\\S"',
+                };
+                if (vErrors === null) {
+                  vErrors = [err19];
+                } else {
+                  vErrors.push(err19);
+                }
+                errors++;
+              }
             } else {
-              const err19 = {
+              const err20 = {
                 instancePath: instancePath + "/bug",
                 schemaPath: "#/properties/bug/type",
                 keyword: "type",
@@ -758,9 +756,9 @@ var ProgressTrackerSchema = (() => {
                 message: "must be string",
               };
               if (vErrors === null) {
-                vErrors = [err19];
+                vErrors = [err20];
               } else {
-                vErrors.push(err19);
+                vErrors.push(err20);
               }
               errors++;
             }
@@ -769,27 +767,12 @@ var ProgressTrackerSchema = (() => {
             let data6 = data.task;
             if (typeof data6 === "string") {
               if (func1(data6) < 1) {
-                const err20 = {
+                const err21 = {
                   instancePath: instancePath + "/task",
                   schemaPath: "#/properties/task/minLength",
                   keyword: "minLength",
                   params: { limit: 1 },
                   message: "must NOT have fewer than 1 characters",
-                };
-                if (vErrors === null) {
-                  vErrors = [err20];
-                } else {
-                  vErrors.push(err20);
-                }
-                errors++;
-              }
-              if (!pattern4.test(data6)) {
-                const err21 = {
-                  instancePath: instancePath + "/task",
-                  schemaPath: "#/properties/task/pattern",
-                  keyword: "pattern",
-                  params: { pattern: "\\S" },
-                  message: 'must match pattern "\\S"',
                 };
                 if (vErrors === null) {
                   vErrors = [err21];
@@ -798,27 +781,25 @@ var ProgressTrackerSchema = (() => {
                 }
                 errors++;
               }
+              if (!pattern4.test(data6)) {
+                const err22 = {
+                  instancePath: instancePath + "/task",
+                  schemaPath: "#/properties/task/pattern",
+                  keyword: "pattern",
+                  params: { pattern: "\\S" },
+                  message: 'must match pattern "\\S"',
+                };
+                if (vErrors === null) {
+                  vErrors = [err22];
+                } else {
+                  vErrors.push(err22);
+                }
+                errors++;
+              }
             } else {
-              const err22 = {
+              const err23 = {
                 instancePath: instancePath + "/task",
                 schemaPath: "#/properties/task/type",
-                keyword: "type",
-                params: { type: "string" },
-                message: "must be string",
-              };
-              if (vErrors === null) {
-                vErrors = [err22];
-              } else {
-                vErrors.push(err22);
-              }
-              errors++;
-            }
-          }
-          if (data.rootCause !== void 0) {
-            if (typeof data.rootCause !== "string") {
-              const err23 = {
-                instancePath: instancePath + "/rootCause",
-                schemaPath: "#/properties/rootCause/type",
                 keyword: "type",
                 params: { type: "string" },
                 message: "must be string",
@@ -831,11 +812,11 @@ var ProgressTrackerSchema = (() => {
               errors++;
             }
           }
-          if (data.howFixed !== void 0) {
-            if (typeof data.howFixed !== "string") {
+          if (data.rootCause !== void 0) {
+            if (typeof data.rootCause !== "string") {
               const err24 = {
-                instancePath: instancePath + "/howFixed",
-                schemaPath: "#/properties/howFixed/type",
+                instancePath: instancePath + "/rootCause",
+                schemaPath: "#/properties/rootCause/type",
                 keyword: "type",
                 params: { type: "string" },
                 message: "must be string",
@@ -848,11 +829,11 @@ var ProgressTrackerSchema = (() => {
               errors++;
             }
           }
-          if (data.evidence !== void 0) {
-            if (typeof data.evidence !== "string") {
+          if (data.howFixed !== void 0) {
+            if (typeof data.howFixed !== "string") {
               const err25 = {
-                instancePath: instancePath + "/evidence",
-                schemaPath: "#/properties/evidence/type",
+                instancePath: instancePath + "/howFixed",
+                schemaPath: "#/properties/howFixed/type",
                 keyword: "type",
                 params: { type: "string" },
                 message: "must be string",
@@ -865,11 +846,11 @@ var ProgressTrackerSchema = (() => {
               errors++;
             }
           }
-          if (data.verification !== void 0) {
-            if (typeof data.verification !== "string") {
+          if (data.evidence !== void 0) {
+            if (typeof data.evidence !== "string") {
               const err26 = {
-                instancePath: instancePath + "/verification",
-                schemaPath: "#/properties/verification/type",
+                instancePath: instancePath + "/evidence",
+                schemaPath: "#/properties/evidence/type",
                 keyword: "type",
                 params: { type: "string" },
                 message: "must be string",
@@ -882,11 +863,11 @@ var ProgressTrackerSchema = (() => {
               errors++;
             }
           }
-          if (data.limitations !== void 0) {
-            if (typeof data.limitations !== "string") {
+          if (data.verification !== void 0) {
+            if (typeof data.verification !== "string") {
               const err27 = {
-                instancePath: instancePath + "/limitations",
-                schemaPath: "#/properties/limitations/type",
+                instancePath: instancePath + "/verification",
+                schemaPath: "#/properties/verification/type",
                 keyword: "type",
                 params: { type: "string" },
                 message: "must be string",
@@ -899,11 +880,11 @@ var ProgressTrackerSchema = (() => {
               errors++;
             }
           }
-          if (data.retestingSummary !== void 0) {
-            if (typeof data.retestingSummary !== "string") {
+          if (data.limitations !== void 0) {
+            if (typeof data.limitations !== "string") {
               const err28 = {
-                instancePath: instancePath + "/retestingSummary",
-                schemaPath: "#/properties/retestingSummary/type",
+                instancePath: instancePath + "/limitations",
+                schemaPath: "#/properties/limitations/type",
                 keyword: "type",
                 params: { type: "string" },
                 message: "must be string",
@@ -916,11 +897,11 @@ var ProgressTrackerSchema = (() => {
               errors++;
             }
           }
-          if (data.retestingFindings !== void 0) {
-            if (typeof data.retestingFindings !== "string") {
+          if (data.retestingSummary !== void 0) {
+            if (typeof data.retestingSummary !== "string") {
               const err29 = {
-                instancePath: instancePath + "/retestingFindings",
-                schemaPath: "#/properties/retestingFindings/type",
+                instancePath: instancePath + "/retestingSummary",
+                schemaPath: "#/properties/retestingSummary/type",
                 keyword: "type",
                 params: { type: "string" },
                 message: "must be string",
@@ -933,11 +914,11 @@ var ProgressTrackerSchema = (() => {
               errors++;
             }
           }
-          if (data.referenceChecklist !== void 0) {
-            if (typeof data.referenceChecklist !== "string") {
+          if (data.retestingFindings !== void 0) {
+            if (typeof data.retestingFindings !== "string") {
               const err30 = {
-                instancePath: instancePath + "/referenceChecklist",
-                schemaPath: "#/properties/referenceChecklist/type",
+                instancePath: instancePath + "/retestingFindings",
+                schemaPath: "#/properties/retestingFindings/type",
                 keyword: "type",
                 params: { type: "string" },
                 message: "must be string",
@@ -950,11 +931,28 @@ var ProgressTrackerSchema = (() => {
               errors++;
             }
           }
+          if (data.referenceChecklist !== void 0) {
+            if (typeof data.referenceChecklist !== "string") {
+              const err31 = {
+                instancePath: instancePath + "/referenceChecklist",
+                schemaPath: "#/properties/referenceChecklist/type",
+                keyword: "type",
+                params: { type: "string" },
+                message: "must be string",
+              };
+              if (vErrors === null) {
+                vErrors = [err31];
+              } else {
+                vErrors.push(err31);
+              }
+              errors++;
+            }
+          }
           if (data.comments !== void 0) {
             let data15 = data.comments;
             if (typeof data15 === "string") {
               if (func1(data15) > 2e3) {
-                const err31 = {
+                const err32 = {
                   instancePath: instancePath + "/comments",
                   schemaPath: "#/properties/comments/maxLength",
                   keyword: "maxLength",
@@ -962,14 +960,14 @@ var ProgressTrackerSchema = (() => {
                   message: "must NOT have more than 2000 characters",
                 };
                 if (vErrors === null) {
-                  vErrors = [err31];
+                  vErrors = [err32];
                 } else {
-                  vErrors.push(err31);
+                  vErrors.push(err32);
                 }
                 errors++;
               }
             } else {
-              const err32 = {
+              const err33 = {
                 instancePath: instancePath + "/comments",
                 schemaPath: "#/properties/comments/type",
                 keyword: "type",
@@ -977,9 +975,9 @@ var ProgressTrackerSchema = (() => {
                 message: "must be string",
               };
               if (vErrors === null) {
-                vErrors = [err32];
+                vErrors = [err33];
               } else {
-                vErrors.push(err32);
+                vErrors.push(err33);
               }
               errors++;
             }
@@ -988,27 +986,12 @@ var ProgressTrackerSchema = (() => {
             let data16 = data.section;
             if (typeof data16 === "string") {
               if (func1(data16) < 1) {
-                const err33 = {
+                const err34 = {
                   instancePath: instancePath + "/section",
                   schemaPath: "#/properties/section/minLength",
                   keyword: "minLength",
                   params: { limit: 1 },
                   message: "must NOT have fewer than 1 characters",
-                };
-                if (vErrors === null) {
-                  vErrors = [err33];
-                } else {
-                  vErrors.push(err33);
-                }
-                errors++;
-              }
-              if (!pattern4.test(data16)) {
-                const err34 = {
-                  instancePath: instancePath + "/section",
-                  schemaPath: "#/properties/section/pattern",
-                  keyword: "pattern",
-                  params: { pattern: "\\S" },
-                  message: 'must match pattern "\\S"',
                 };
                 if (vErrors === null) {
                   vErrors = [err34];
@@ -1017,8 +1000,23 @@ var ProgressTrackerSchema = (() => {
                 }
                 errors++;
               }
+              if (!pattern4.test(data16)) {
+                const err35 = {
+                  instancePath: instancePath + "/section",
+                  schemaPath: "#/properties/section/pattern",
+                  keyword: "pattern",
+                  params: { pattern: "\\S" },
+                  message: 'must match pattern "\\S"',
+                };
+                if (vErrors === null) {
+                  vErrors = [err35];
+                } else {
+                  vErrors.push(err35);
+                }
+                errors++;
+              }
             } else {
-              const err35 = {
+              const err36 = {
                 instancePath: instancePath + "/section",
                 schemaPath: "#/properties/section/type",
                 keyword: "type",
@@ -1026,9 +1024,9 @@ var ProgressTrackerSchema = (() => {
                 message: "must be string",
               };
               if (vErrors === null) {
-                vErrors = [err35];
+                vErrors = [err36];
               } else {
-                vErrors.push(err35);
+                vErrors.push(err36);
               }
               errors++;
             }
@@ -1036,28 +1034,13 @@ var ProgressTrackerSchema = (() => {
           if (data.report !== void 0) {
             let data17 = data.report;
             if (typeof data17 === "string") {
-              if (!pattern8.test(data17)) {
-                const err36 = {
+              if (!pattern9.test(data17)) {
+                const err37 = {
                   instancePath: instancePath + "/report",
                   schemaPath: "#/properties/report/pattern",
                   keyword: "pattern",
                   params: { pattern: "^https://" },
                   message: 'must match pattern "^https://"',
-                };
-                if (vErrors === null) {
-                  vErrors = [err36];
-                } else {
-                  vErrors.push(err36);
-                }
-                errors++;
-              }
-              if (!formats2(data17)) {
-                const err37 = {
-                  instancePath: instancePath + "/report",
-                  schemaPath: "#/properties/report/format",
-                  keyword: "format",
-                  params: { format: "uri" },
-                  message: 'must match format "uri"',
                 };
                 if (vErrors === null) {
                   vErrors = [err37];
@@ -1066,28 +1049,25 @@ var ProgressTrackerSchema = (() => {
                 }
                 errors++;
               }
+              if (!formats2(data17)) {
+                const err38 = {
+                  instancePath: instancePath + "/report",
+                  schemaPath: "#/properties/report/format",
+                  keyword: "format",
+                  params: { format: "uri" },
+                  message: 'must match format "uri"',
+                };
+                if (vErrors === null) {
+                  vErrors = [err38];
+                } else {
+                  vErrors.push(err38);
+                }
+                errors++;
+              }
             } else {
-              const err38 = {
+              const err39 = {
                 instancePath: instancePath + "/report",
                 schemaPath: "#/properties/report/type",
-                keyword: "type",
-                params: { type: "string" },
-                message: "must be string",
-              };
-              if (vErrors === null) {
-                vErrors = [err38];
-              } else {
-                vErrors.push(err38);
-              }
-              errors++;
-            }
-          }
-          if (data.reportState !== void 0) {
-            let data18 = data.reportState;
-            if (typeof data18 !== "string") {
-              const err39 = {
-                instancePath: instancePath + "/reportState",
-                schemaPath: "#/properties/reportState/type",
                 keyword: "type",
                 params: { type: "string" },
                 message: "must be string",
@@ -1099,8 +1079,26 @@ var ProgressTrackerSchema = (() => {
               }
               errors++;
             }
-            if (!(data18 === "OPEN" || data18 === "CLOSED")) {
+          }
+          if (data.reportState !== void 0) {
+            let data18 = data.reportState;
+            if (typeof data18 !== "string") {
               const err40 = {
+                instancePath: instancePath + "/reportState",
+                schemaPath: "#/properties/reportState/type",
+                keyword: "type",
+                params: { type: "string" },
+                message: "must be string",
+              };
+              if (vErrors === null) {
+                vErrors = [err40];
+              } else {
+                vErrors.push(err40);
+              }
+              errors++;
+            }
+            if (!(data18 === "OPEN" || data18 === "CLOSED")) {
+              const err41 = {
                 instancePath: instancePath + "/reportState",
                 schemaPath: "#/properties/reportState/enum",
                 keyword: "enum",
@@ -1108,9 +1106,9 @@ var ProgressTrackerSchema = (() => {
                 message: "must be equal to one of the allowed values",
               };
               if (vErrors === null) {
-                vErrors = [err40];
+                vErrors = [err41];
               } else {
-                vErrors.push(err40);
+                vErrors.push(err41);
               }
               errors++;
             }
@@ -1122,28 +1120,13 @@ var ProgressTrackerSchema = (() => {
               for (let i0 = 0; i0 < len0; i0++) {
                 let data20 = data19[i0];
                 if (typeof data20 === "string") {
-                  if (!pattern8.test(data20)) {
-                    const err41 = {
+                  if (!pattern9.test(data20)) {
+                    const err42 = {
                       instancePath: instancePath + "/researchSources/" + i0,
                       schemaPath: "#/properties/researchSources/items/pattern",
                       keyword: "pattern",
                       params: { pattern: "^https://" },
                       message: 'must match pattern "^https://"',
-                    };
-                    if (vErrors === null) {
-                      vErrors = [err41];
-                    } else {
-                      vErrors.push(err41);
-                    }
-                    errors++;
-                  }
-                  if (!formats2(data20)) {
-                    const err42 = {
-                      instancePath: instancePath + "/researchSources/" + i0,
-                      schemaPath: "#/properties/researchSources/items/format",
-                      keyword: "format",
-                      params: { format: "uri" },
-                      message: 'must match format "uri"',
                     };
                     if (vErrors === null) {
                       vErrors = [err42];
@@ -1152,8 +1135,23 @@ var ProgressTrackerSchema = (() => {
                     }
                     errors++;
                   }
+                  if (!formats2(data20)) {
+                    const err43 = {
+                      instancePath: instancePath + "/researchSources/" + i0,
+                      schemaPath: "#/properties/researchSources/items/format",
+                      keyword: "format",
+                      params: { format: "uri" },
+                      message: 'must match format "uri"',
+                    };
+                    if (vErrors === null) {
+                      vErrors = [err43];
+                    } else {
+                      vErrors.push(err43);
+                    }
+                    errors++;
+                  }
                 } else {
-                  const err43 = {
+                  const err44 = {
                     instancePath: instancePath + "/researchSources/" + i0,
                     schemaPath: "#/properties/researchSources/items/type",
                     keyword: "type",
@@ -1161,15 +1159,15 @@ var ProgressTrackerSchema = (() => {
                     message: "must be string",
                   };
                   if (vErrors === null) {
-                    vErrors = [err43];
+                    vErrors = [err44];
                   } else {
-                    vErrors.push(err43);
+                    vErrors.push(err44);
                   }
                   errors++;
                 }
               }
             } else {
-              const err44 = {
+              const err45 = {
                 instancePath: instancePath + "/researchSources",
                 schemaPath: "#/properties/researchSources/type",
                 keyword: "type",
@@ -1177,9 +1175,9 @@ var ProgressTrackerSchema = (() => {
                 message: "must be array",
               };
               if (vErrors === null) {
-                vErrors = [err44];
+                vErrors = [err45];
               } else {
-                vErrors.push(err44);
+                vErrors.push(err45);
               }
               errors++;
             }
@@ -1190,8 +1188,8 @@ var ProgressTrackerSchema = (() => {
               for (const key0 in data21) {
                 const _errs51 = errors;
                 if (typeof key0 === "string") {
-                  if (!pattern10.test(key0)) {
-                    const err45 = {
+                  if (!pattern11.test(key0)) {
+                    const err46 = {
                       instancePath: instancePath + "/pullRequests",
                       schemaPath:
                         "#/properties/pullRequests/propertyNames/pattern",
@@ -1201,16 +1199,16 @@ var ProgressTrackerSchema = (() => {
                       propertyName: key0,
                     };
                     if (vErrors === null) {
-                      vErrors = [err45];
+                      vErrors = [err46];
                     } else {
-                      vErrors.push(err45);
+                      vErrors.push(err46);
                     }
                     errors++;
                   }
                 }
                 var valid5 = _errs51 === errors;
                 if (!valid5) {
-                  const err46 = {
+                  const err47 = {
                     instancePath: instancePath + "/pullRequests",
                     schemaPath: "#/properties/pullRequests/propertyNames",
                     keyword: "propertyNames",
@@ -1218,9 +1216,9 @@ var ProgressTrackerSchema = (() => {
                     message: "property name must be valid",
                   };
                   if (vErrors === null) {
-                    vErrors = [err46];
+                    vErrors = [err47];
                   } else {
-                    vErrors.push(err46);
+                    vErrors.push(err47);
                   }
                   errors++;
                 }
@@ -1228,8 +1226,8 @@ var ProgressTrackerSchema = (() => {
               for (const key1 in data21) {
                 let data22 = data21[key1];
                 if (typeof data22 === "string") {
-                  if (!pattern8.test(data22)) {
-                    const err47 = {
+                  if (!pattern9.test(data22)) {
+                    const err48 = {
                       instancePath:
                         instancePath +
                         "/pullRequests/" +
@@ -1241,14 +1239,14 @@ var ProgressTrackerSchema = (() => {
                       message: 'must match pattern "^https://"',
                     };
                     if (vErrors === null) {
-                      vErrors = [err47];
+                      vErrors = [err48];
                     } else {
-                      vErrors.push(err47);
+                      vErrors.push(err48);
                     }
                     errors++;
                   }
                   if (!formats2(data22)) {
-                    const err48 = {
+                    const err49 = {
                       instancePath:
                         instancePath +
                         "/pullRequests/" +
@@ -1260,14 +1258,14 @@ var ProgressTrackerSchema = (() => {
                       message: 'must match format "uri"',
                     };
                     if (vErrors === null) {
-                      vErrors = [err48];
+                      vErrors = [err49];
                     } else {
-                      vErrors.push(err48);
+                      vErrors.push(err49);
                     }
                     errors++;
                   }
                 } else {
-                  const err49 = {
+                  const err50 = {
                     instancePath:
                       instancePath +
                       "/pullRequests/" +
@@ -1279,38 +1277,20 @@ var ProgressTrackerSchema = (() => {
                     message: "must be string",
                   };
                   if (vErrors === null) {
-                    vErrors = [err49];
+                    vErrors = [err50];
                   } else {
-                    vErrors.push(err49);
+                    vErrors.push(err50);
                   }
                   errors++;
                 }
               }
             } else {
-              const err50 = {
+              const err51 = {
                 instancePath: instancePath + "/pullRequests",
                 schemaPath: "#/properties/pullRequests/type",
                 keyword: "type",
                 params: { type: "object" },
                 message: "must be object",
-              };
-              if (vErrors === null) {
-                vErrors = [err50];
-              } else {
-                vErrors.push(err50);
-              }
-              errors++;
-            }
-          }
-          if (data.createdAt !== void 0) {
-            let data23 = data.createdAt;
-            if (typeof data23 !== "string" && data23 !== null) {
-              const err51 = {
-                instancePath: instancePath + "/createdAt",
-                schemaPath: "#/properties/createdAt/type",
-                keyword: "type",
-                params: { type: schema32.properties.createdAt.type },
-                message: "must be string,null",
               };
               if (vErrors === null) {
                 vErrors = [err51];
@@ -1319,9 +1299,27 @@ var ProgressTrackerSchema = (() => {
               }
               errors++;
             }
+          }
+          if (data.createdAt !== void 0) {
+            let data23 = data.createdAt;
+            if (typeof data23 !== "string" && data23 !== null) {
+              const err52 = {
+                instancePath: instancePath + "/createdAt",
+                schemaPath: "#/properties/createdAt/type",
+                keyword: "type",
+                params: { type: schema32.properties.createdAt.type },
+                message: "must be string,null",
+              };
+              if (vErrors === null) {
+                vErrors = [err52];
+              } else {
+                vErrors.push(err52);
+              }
+              errors++;
+            }
             if (typeof data23 === "string") {
               if (!formats0.validate(data23)) {
-                const err52 = {
+                const err53 = {
                   instancePath: instancePath + "/createdAt",
                   schemaPath: "#/properties/createdAt/format",
                   keyword: "format",
@@ -1329,9 +1327,9 @@ var ProgressTrackerSchema = (() => {
                   message: 'must match format "date-time"',
                 };
                 if (vErrors === null) {
-                  vErrors = [err52];
+                  vErrors = [err53];
                 } else {
-                  vErrors.push(err52);
+                  vErrors.push(err53);
                 }
                 errors++;
               }
@@ -1340,7 +1338,7 @@ var ProgressTrackerSchema = (() => {
           if (data.doneAt !== void 0) {
             let data24 = data.doneAt;
             if (typeof data24 !== "string" && data24 !== null) {
-              const err53 = {
+              const err54 = {
                 instancePath: instancePath + "/doneAt",
                 schemaPath: "#/properties/doneAt/type",
                 keyword: "type",
@@ -1348,15 +1346,15 @@ var ProgressTrackerSchema = (() => {
                 message: "must be string,null",
               };
               if (vErrors === null) {
-                vErrors = [err53];
+                vErrors = [err54];
               } else {
-                vErrors.push(err53);
+                vErrors.push(err54);
               }
               errors++;
             }
             if (typeof data24 === "string") {
               if (!formats0.validate(data24)) {
-                const err54 = {
+                const err55 = {
                   instancePath: instancePath + "/doneAt",
                   schemaPath: "#/properties/doneAt/format",
                   keyword: "format",
@@ -1364,9 +1362,9 @@ var ProgressTrackerSchema = (() => {
                   message: 'must match format "date-time"',
                 };
                 if (vErrors === null) {
-                  vErrors = [err54];
+                  vErrors = [err55];
                 } else {
-                  vErrors.push(err54);
+                  vErrors.push(err55);
                 }
                 errors++;
               }
@@ -1376,7 +1374,7 @@ var ProgressTrackerSchema = (() => {
             let data25 = data.est;
             if (typeof data25 === "string") {
               if (func1(data25) > 40) {
-                const err55 = {
+                const err56 = {
                   instancePath: instancePath + "/est",
                   schemaPath: "#/properties/est/maxLength",
                   keyword: "maxLength",
@@ -1384,14 +1382,14 @@ var ProgressTrackerSchema = (() => {
                   message: "must NOT have more than 40 characters",
                 };
                 if (vErrors === null) {
-                  vErrors = [err55];
+                  vErrors = [err56];
                 } else {
-                  vErrors.push(err55);
+                  vErrors.push(err56);
                 }
                 errors++;
               }
             } else {
-              const err56 = {
+              const err57 = {
                 instancePath: instancePath + "/est",
                 schemaPath: "#/properties/est/type",
                 keyword: "type",
@@ -1399,9 +1397,9 @@ var ProgressTrackerSchema = (() => {
                 message: "must be string",
               };
               if (vErrors === null) {
-                vErrors = [err56];
+                vErrors = [err57];
               } else {
-                vErrors.push(err56);
+                vErrors.push(err57);
               }
               errors++;
             }
@@ -1414,7 +1412,7 @@ var ProgressTrackerSchema = (() => {
               !isNaN(data26) &&
               isFinite(data26)
             )) {
-              const err57 = {
+              const err58 = {
                 instancePath: instancePath + "/difficulty",
                 schemaPath: "#/properties/difficulty/type",
                 keyword: "type",
@@ -1422,15 +1420,15 @@ var ProgressTrackerSchema = (() => {
                 message: "must be integer",
               };
               if (vErrors === null) {
-                vErrors = [err57];
+                vErrors = [err58];
               } else {
-                vErrors.push(err57);
+                vErrors.push(err58);
               }
               errors++;
             }
             if (typeof data26 == "number" && isFinite(data26)) {
               if (data26 > 100 || isNaN(data26)) {
-                const err58 = {
+                const err59 = {
                   instancePath: instancePath + "/difficulty",
                   schemaPath: "#/properties/difficulty/maximum",
                   keyword: "maximum",
@@ -1438,14 +1436,14 @@ var ProgressTrackerSchema = (() => {
                   message: "must be <= 100",
                 };
                 if (vErrors === null) {
-                  vErrors = [err58];
+                  vErrors = [err59];
                 } else {
-                  vErrors.push(err58);
+                  vErrors.push(err59);
                 }
                 errors++;
               }
               if (data26 < 1 || isNaN(data26)) {
-                const err59 = {
+                const err60 = {
                   instancePath: instancePath + "/difficulty",
                   schemaPath: "#/properties/difficulty/minimum",
                   keyword: "minimum",
@@ -1453,9 +1451,9 @@ var ProgressTrackerSchema = (() => {
                   message: "must be >= 1",
                 };
                 if (vErrors === null) {
-                  vErrors = [err59];
+                  vErrors = [err60];
                 } else {
-                  vErrors.push(err59);
+                  vErrors.push(err60);
                 }
                 errors++;
               }
@@ -1469,7 +1467,7 @@ var ProgressTrackerSchema = (() => {
               !isNaN(data27) &&
               isFinite(data27)
             )) {
-              const err60 = {
+              const err61 = {
                 instancePath: instancePath + "/progress",
                 schemaPath: "#/properties/progress/type",
                 keyword: "type",
@@ -1477,35 +1475,20 @@ var ProgressTrackerSchema = (() => {
                 message: "must be integer",
               };
               if (vErrors === null) {
-                vErrors = [err60];
+                vErrors = [err61];
               } else {
-                vErrors.push(err60);
+                vErrors.push(err61);
               }
               errors++;
             }
             if (typeof data27 == "number" && isFinite(data27)) {
               if (data27 > 100 || isNaN(data27)) {
-                const err61 = {
+                const err62 = {
                   instancePath: instancePath + "/progress",
                   schemaPath: "#/properties/progress/maximum",
                   keyword: "maximum",
                   params: { comparison: "<=", limit: 100 },
                   message: "must be <= 100",
-                };
-                if (vErrors === null) {
-                  vErrors = [err61];
-                } else {
-                  vErrors.push(err61);
-                }
-                errors++;
-              }
-              if (data27 < 0 || isNaN(data27)) {
-                const err62 = {
-                  instancePath: instancePath + "/progress",
-                  schemaPath: "#/properties/progress/minimum",
-                  keyword: "minimum",
-                  params: { comparison: ">=", limit: 0 },
-                  message: "must be >= 0",
                 };
                 if (vErrors === null) {
                   vErrors = [err62];
@@ -1514,10 +1497,25 @@ var ProgressTrackerSchema = (() => {
                 }
                 errors++;
               }
+              if (data27 < 0 || isNaN(data27)) {
+                const err63 = {
+                  instancePath: instancePath + "/progress",
+                  schemaPath: "#/properties/progress/minimum",
+                  keyword: "minimum",
+                  params: { comparison: ">=", limit: 0 },
+                  message: "must be >= 0",
+                };
+                if (vErrors === null) {
+                  vErrors = [err63];
+                } else {
+                  vErrors.push(err63);
+                }
+                errors++;
+              }
             }
           }
         } else {
-          const err63 = {
+          const err64 = {
             instancePath,
             schemaPath: "#/type",
             keyword: "type",
@@ -1525,9 +1523,9 @@ var ProgressTrackerSchema = (() => {
             message: "must be object",
           };
           if (vErrors === null) {
-            vErrors = [err63];
+            vErrors = [err64];
           } else {
-            vErrors.push(err63);
+            vErrors.push(err64);
           }
           errors++;
         }
@@ -2389,7 +2387,7 @@ var ProgressTrackerSchema = (() => {
         dynamicItems: false,
       };
       exports.schemaHash =
-        "fc124542ae330f9450346a69cde43e85f94598d179c968f6a2a39986ecf214c9";
+        "c1cbdce059908f8a1dd57f13643e5d79536b9b7da15169b2bc76ebdf349c42ba";
       exports.statuses = ["To do", "Doing", "Waiting", "Done"];
       exports.statusUI = {
         "To do": { tone: "gray", since: "Opened" },

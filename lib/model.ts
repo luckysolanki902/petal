@@ -1,5 +1,10 @@
+import {
+  completeStatus,
+  DEFAULT_CONFIGURATION,
+  type ProjectConfiguration,
+} from "./project-config";
 export const STATUSES = ["To do", "Doing", "Waiting", "Done"] as const;
-export type Status = (typeof STATUSES)[number];
+export type Status = string;
 export type Row = {
   id: string;
   createdAt: string | null;
@@ -26,11 +31,18 @@ export type TrackerFile = {
   error?: string;
 };
 export type Workspace = {
+  projectSummaries?: {
+    id: string;
+    progress: number | null;
+    todos: number | null;
+    error?: string;
+  }[];
   projects: { id: string; name: string; root: string; dataDir: string }[];
   project: { id: string; name: string; root: string; dataDir: string };
   files: TrackerFile[];
   estimates: { file: string; id: string; createdAt: string }[];
   warnings: string[];
+  configuration: ProjectConfiguration;
 };
 export type Edit = {
   id: string;
@@ -38,10 +50,16 @@ export type Edit = {
   status?: Status;
   done?: boolean;
   delete?: boolean;
+  fields?: Record<string, unknown>;
+  category?: string;
 };
 export const TODO = "data/todo.json";
-export const isComplete = (row: Row, file: string) =>
-  file === TODO ? row.done === true : row.status === "Done";
+export const isComplete = (
+  row: Row,
+  file: string,
+  configuration: ProjectConfiguration = DEFAULT_CONFIGURATION,
+) =>
+  file === TODO ? row.done === true : completeStatus(row.status, configuration);
 export const fileLabel = (file: string) =>
   file
     .split("/")

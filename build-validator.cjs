@@ -30,7 +30,7 @@ const digest = crypto
   .digest("hex");
 const helpers = `
 exports.schemaHash = ${JSON.stringify(digest)};
-exports.statuses = ${JSON.stringify(schema.$defs.status.enum)};
+exports.statuses = ${JSON.stringify(Object.keys(schema.$defs.status["x-ui"]))};
 exports.statusUI = ${JSON.stringify(schema.$defs.status["x-ui"])};
 exports.commentLimit = ${schema.$defs.row.properties.comments.maxLength};
 exports.checkRows = function(rows,file) {

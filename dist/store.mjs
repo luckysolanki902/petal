@@ -7,8 +7,182 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { isDeepStrictEqual } from "node:util";
 
+// lib/project-config.ts
+var DEFAULT_CONFIGURATION = {
+  statuses: [
+    { name: "To do", complete: false, color: 220 },
+    { name: "Doing", complete: false, color: 32 },
+    { name: "Waiting", complete: false, color: 48 },
+    { name: "Done", complete: true, color: 150 },
+  ],
+  categories: [],
+  fields: [],
+  fieldLabels: {},
+};
+var CORE_FIELDS = /* @__PURE__ */ new Set([
+  "id",
+  "status",
+  "statusAt",
+  "createdAt",
+  "done",
+  "doneAt",
+  "task",
+  "bug",
+  "comments",
+  "progress",
+  "est",
+  "difficulty",
+  "category",
+  "section",
+  "severity",
+  "rootCause",
+  "howFixed",
+  "evidence",
+  "verification",
+  "limitations",
+  "retestingSummary",
+  "retestingFindings",
+  "referenceChecklist",
+  "report",
+  "reportState",
+  "researchSources",
+  "pullRequests",
+  "statusDetail",
+  "delete",
+  "fields",
+  "__proto__",
+  "prototype",
+  "constructor",
+]);
+function configurationErrors(input) {
+  const errors = [];
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    return ["Expected project configuration."];
+  const c = input;
+  if (
+    Object.keys(c).some(
+      (k) => !["statuses", "categories", "fields", "fieldLabels"].includes(k),
+    )
+  )
+    errors.push("Unknown configuration key.");
+  const names = (rows, kind, max) => {
+    if (!Array.isArray(rows) || rows.length > max) {
+      errors.push(`${kind} must be an array with at most ${max} entries.`);
+      return false;
+    }
+    const used = /* @__PURE__ */ new Set();
+    for (const row of rows) {
+      if (
+        !row ||
+        typeof row !== "object" ||
+        typeof row.name !== "string" ||
+        !row.name.trim() ||
+        row.name !== row.name.trim() ||
+        row.name.length > 60 ||
+        used.has(row.name.toLowerCase())
+      )
+        errors.push(
+          `${kind} names must be unique, trimmed text (1\u201360 characters).`,
+        );
+      else used.add(row.name.toLowerCase());
+      if (!Number.isInteger(row?.color) || row.color < 0 || row.color > 360)
+        errors.push(`${kind} colors must be a hue from 0\u2013360.`);
+    }
+    return true;
+  };
+  if (names(c.statuses, "Status", 24)) {
+    if (
+      c.statuses.some(
+        (s) =>
+          !s ||
+          typeof s.complete !== "boolean" ||
+          (typeof s.name === "string" &&
+            ["active", "all"].includes(s.name.toLowerCase())),
+      )
+    )
+      errors.push(
+        "Statuses need a completion rule and cannot be named Active or All.",
+      );
+    if (
+      !c.statuses.some((s) => s?.complete === false) ||
+      !c.statuses.some((s) => s?.complete === true)
+    )
+      errors.push("Include at least one unfinished and one complete status.");
+  }
+  names(c.categories, "Category", 100);
+  if (!Array.isArray(c.fields) || c.fields.length > 40)
+    errors.push("Fields must be an array with at most 40 entries.");
+  else {
+    const keys = /* @__PURE__ */ new Set();
+    for (const f of c.fields) {
+      if (
+        !f ||
+        typeof f.key !== "string" ||
+        !/^[a-zA-Z][a-zA-Z0-9_]{0,49}$/.test(f.key) ||
+        CORE_FIELDS.has(f.key) ||
+        keys.has(f.key)
+      )
+        errors.push(
+          "Custom field keys must be unique identifiers and cannot replace protected core fields.",
+        );
+      else keys.add(f.key);
+      if (
+        !f ||
+        typeof f.label !== "string" ||
+        !f.label.trim() ||
+        f.label.length > 80 ||
+        !["text", "number", "boolean"].includes(f.type)
+      )
+        errors.push(
+          "Each custom field needs a label and text, number, or boolean type.",
+        );
+    }
+  }
+  if (
+    !c.fieldLabels ||
+    typeof c.fieldLabels !== "object" ||
+    Array.isArray(c.fieldLabels) ||
+    Object.entries(c.fieldLabels).some(
+      ([k, v]) =>
+        !k.trim() ||
+        k.length > 100 ||
+        ["__proto__", "constructor", "prototype"].includes(k) ||
+        typeof v !== "string" ||
+        !v.trim() ||
+        v.length > 80,
+    )
+  )
+    errors.push("Field labels must be nonempty text, up to 80 characters.");
+  return errors;
+}
+function rowConfigurationErrors(rows, file, c) {
+  const errors = [];
+  for (const row of rows) {
+    if (
+      file !== "data/todo.json" &&
+      !c.statuses.some((s) => s.name === row.status)
+    )
+      errors.push(
+        `${row.id}: status ${JSON.stringify(row.status)} is not configured for this project.`,
+      );
+    for (const f of c.fields) {
+      if (!Object.hasOwn(row, f.key)) continue;
+      const value = row[f.key];
+      if (
+        (f.type === "text" && typeof value !== "string") ||
+        (f.type === "number" &&
+          (typeof value !== "number" || !Number.isFinite(value))) ||
+        (f.type === "boolean" && typeof value !== "boolean")
+      )
+        errors.push(`${row.id}.${f.key} must be ${f.type}.`);
+    }
+  }
+  return errors;
+}
+var completeStatus = (status, c = DEFAULT_CONFIGURATION) =>
+  c.statuses.some((s) => s.name === status && s.complete);
+
 // lib/model.ts
-var STATUSES = ["To do", "Doing", "Waiting", "Done"];
 var TODO = "data/todo.json";
 
 // lib/store.ts
@@ -53,6 +227,7 @@ function createStore(root, repositoryRoot = root) {
           );
         throw error;
       }
+      await recoverConfiguration();
       return await work();
     } finally {
       if (acquired) await fs.rm(lock, { recursive: true, force: true });
@@ -62,7 +237,7 @@ function createStore(root, repositoryRoot = root) {
   async function json(file) {
     return JSON.parse(await fs.readFile(path.join(root, file), "utf8"));
   }
-  async function validate(rows, file) {
+  async function validate(rows, file, configuration) {
     const schema = JSON.parse(
       await fs.readFile(
         path.join(
@@ -80,6 +255,13 @@ function createStore(root, repositoryRoot = root) {
     const result = validator.checkRows(rows, file);
     if (!result.valid)
       throw new StoreError(422, `Invalid tracker ${file}`, result.errors);
+    const errors = rowConfigurationErrors(
+      rows,
+      file,
+      configuration || (await projectConfiguration()).configuration,
+    );
+    if (errors.length)
+      throw new StoreError(422, `Invalid project fields in ${file}`, errors);
   }
   async function resolveFile(file) {
     if (
@@ -115,6 +297,226 @@ function createStore(root, repositoryRoot = root) {
       await fs.rm(temp, { force: true });
     }
   }
+  const configPath = path.join(root, "project-settings.json"),
+    transactionPath = path.join(root, ".petal-config-transaction.json");
+  async function optionalText(file) {
+    try {
+      return await fs.readFile(file, "utf8");
+    } catch (error) {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    }
+  }
+  async function atomicText(file, text) {
+    const temp = file + "." + randomUUID() + ".tmp";
+    try {
+      await fs.writeFile(temp, text, { flag: "wx" });
+      await fs.rename(temp, file);
+    } finally {
+      await fs.rm(temp, { force: true });
+    }
+  }
+  async function projectConfiguration() {
+    await ensureConfigurationRecovered();
+    const text = await optionalText(configPath),
+      configuration =
+        text === null
+          ? structuredClone(DEFAULT_CONFIGURATION)
+          : JSON.parse(text);
+    const errors = configurationErrors(configuration);
+    if (errors.length)
+      throw new StoreError(422, "Invalid project-settings.json", errors);
+    return {
+      configuration,
+      revision: digest(text ?? JSON.stringify(DEFAULT_CONFIGURATION)),
+    };
+  }
+  async function recoverConfiguration() {
+    const text = await optionalText(transactionPath);
+    if (!text) return;
+    const transaction = JSON.parse(text);
+    if (transaction.state !== "committed") {
+      if (
+        !Array.isArray(transaction.files) ||
+        transaction.files.some(
+          (f) =>
+            typeof f.file !== "string" ||
+            !/^data\/.+\.json$/.test(f.file) ||
+            f.file.split("/").includes("..") ||
+            typeof f.before !== "string",
+        )
+      )
+        throw new StoreError(
+          503,
+          "Invalid configuration recovery journal; inspect it before retrying.",
+        );
+      const currentConfiguration = await optionalText(configPath);
+      if (
+        currentConfiguration !== transaction.beforeConfiguration &&
+        currentConfiguration !== transaction.afterConfiguration
+      )
+        throw new StoreError(
+          503,
+          "Project configuration was edited outside an unfinished migration; inspect the recovery journal before proceeding.",
+        );
+      for (const f of transaction.files) {
+        const current = await fs.readFile(await resolveFile(f.file), "utf8");
+        if (current !== f.before && current !== f.after)
+          throw new StoreError(
+            503,
+            `${f.file} was edited outside an unfinished migration; recovery will not overwrite it.`,
+          );
+      }
+      for (const f of transaction.files)
+        await atomicText(await resolveFile(f.file), f.before);
+      if (transaction.beforeConfiguration === null)
+        await fs.rm(configPath, { force: true });
+      else await atomicText(configPath, transaction.beforeConfiguration);
+    }
+    await fs.rm(transactionPath, { force: true });
+  }
+  async function ensureConfigurationRecovered() {
+    if (await optionalText(transactionPath)) {
+      if (busy)
+        throw new StoreError(
+          409,
+          "Project settings migration is running; retry shortly.",
+        );
+      await locked(async () => {});
+    }
+  }
+  async function configurationPlan(input, revision, mapping = {}) {
+    await ensureConfigurationRecovered();
+    const current = await projectConfiguration();
+    if (current.revision !== revision)
+      throw new StoreError(
+        409,
+        "Project settings changed. Reload Settings before retrying.",
+      );
+    const errors = configurationErrors(input);
+    if (errors.length)
+      throw new StoreError(422, "Invalid project configuration", errors);
+    if (
+      !mapping ||
+      typeof mapping !== "object" ||
+      Array.isArray(mapping) ||
+      Object.entries(mapping).some(
+        ([k, v]) =>
+          ["__proto__", "constructor", "prototype"].includes(k) ||
+          typeof v !== "string",
+      )
+    )
+      throw new StoreError(400, "Expected explicit status mappings.");
+    const configuration = input,
+      files = [],
+      revisions = {};
+    for (const file of await list()) {
+      const before = await fs.readFile(await resolveFile(file), "utf8"),
+        rows = JSON.parse(before);
+      await validate(rows, file, current.configuration);
+      revisions[file] = digest(before);
+      let changed = 0;
+      for (const row of rows) {
+        if (file !== TODO) {
+          const oldStatus = row.status;
+          const name = Object.hasOwn(mapping, row.status)
+            ? mapping[row.status]
+            : row.status;
+          if (!configuration.statuses.some((s) => s.name === name))
+            throw new StoreError(
+              422,
+              `${file}: map status ${JSON.stringify(row.status)} to a configured status before applying.`,
+            );
+          if (name !== row.status) {
+            row.status = name;
+            changed++;
+          }
+          const wasComplete = completeStatus(oldStatus, current.configuration);
+          if (completeStatus(name, configuration)) {
+            if (row.progress !== 100) {
+              row.progress = 100;
+              changed++;
+            }
+          } else if (row.progress === 100 && wasComplete) {
+            delete row.progress;
+            changed++;
+          }
+        }
+      }
+      await validate(rows, file, configuration);
+      const after = JSON.stringify(rows, null, 2) + "\n";
+      if (changed) files.push({ file, before, after, rows: changed });
+    }
+    const token = digest(
+      JSON.stringify({ configuration, mapping, revision, revisions }),
+    );
+    return { configuration, files, token };
+  }
+  async function previewConfiguration(input, revision, mapping) {
+    const plan = await configurationPlan(input, revision, mapping);
+    return {
+      token: plan.token,
+      files: plan.files.map((f) => ({ file: f.file, changes: f.rows })),
+      totalChanges: plan.files.reduce((n, f) => n + f.rows, 0),
+    };
+  }
+  async function saveConfiguration(input, revision, mapping, token) {
+    return locked(async () => {
+      const plan = await configurationPlan(input, revision, mapping);
+      if (typeof token !== "string" || token !== plan.token)
+        throw new StoreError(
+          409,
+          "Preview is stale. Preview the current files again before applying.",
+        );
+      const beforeConfiguration = await optionalText(configPath),
+        id = randomUUID(),
+        journal = {
+          state: "pending",
+          id,
+          beforeConfiguration,
+          afterConfiguration:
+            JSON.stringify(plan.configuration, null, 2) + "\n",
+          files: plan.files,
+        };
+      await atomic(transactionPath, journal);
+      try {
+        for (const f of plan.files)
+          await atomicText(await resolveFile(f.file), f.after);
+        await atomic(configPath, plan.configuration);
+        await fs.mkdir(path.join(root, "migrations"), { recursive: true });
+        await atomic(
+          path.join(root, "migrations", `project-settings-${id}.json`),
+          {
+            at: /* @__PURE__ */ new Date().toISOString(),
+            before:
+              beforeConfiguration === null
+                ? DEFAULT_CONFIGURATION
+                : JSON.parse(beforeConfiguration),
+            after: plan.configuration,
+            files: plan.files,
+          },
+        );
+        await atomic(transactionPath, { ...journal, state: "committed" });
+      } catch (error) {
+        try {
+          await recoverConfiguration();
+        } catch (recovery) {
+          throw new StoreError(
+            503,
+            "Settings migration failed and rollback needs recovery. Do not edit tracker files until the next successful writer recovers the journal.",
+            { cause: String(error), recovery: String(recovery) },
+          );
+        }
+        throw error;
+      }
+      await fs.rm(transactionPath, { force: true });
+      return {
+        ok: true,
+        ...(await projectConfiguration()),
+        migratedFiles: plan.files.length,
+      };
+    });
+  }
   async function list(dir = "data") {
     const entries = await fs.readdir(
       /* turbopackIgnore: true */
@@ -137,6 +539,9 @@ function createStore(root, repositoryRoot = root) {
     return arrays.flat().sort();
   }
   async function workspace() {
+    await ensureConfigurationRecovered();
+    const { configuration, revision: configRevision } =
+      await projectConfiguration();
     const warnings = [];
     let icons = {};
     let estimates = [];
@@ -168,7 +573,7 @@ function createStore(root, repositoryRoot = root) {
         try {
           const text = await fs.readFile(await resolveFile(file), "utf8");
           const rows = JSON.parse(text);
-          await validate(rows, file);
+          await validate(rows, file, configuration);
           return { path: file, rows, revision: digest(text), icon };
         } catch (error) {
           return {
@@ -184,7 +589,15 @@ function createStore(root, repositoryRoot = root) {
         }
       }),
     );
-    return { files, estimates, warnings };
+    if (
+      (await optionalText(transactionPath)) ||
+      (await projectConfiguration()).revision !== configRevision
+    )
+      throw new StoreError(
+        409,
+        "Project configuration changed during refresh. Retry shortly.",
+      );
+    return { files, estimates, warnings, configuration };
   }
   async function save(file, revision, edits) {
     return locked(async () => {
@@ -199,6 +612,7 @@ function createStore(root, repositoryRoot = root) {
         );
       const rows = JSON.parse(text);
       await validate(rows, file);
+      const { configuration } = await projectConfiguration();
       const ids = /* @__PURE__ */ new Set();
       for (const edit of edits) {
         if (
@@ -206,7 +620,16 @@ function createStore(root, repositoryRoot = root) {
           typeof edit.id !== "string" ||
           ids.has(edit.id) ||
           Object.keys(edit).some(
-            (k) => !["id", "comments", "status", "done", "delete"].includes(k),
+            (k) =>
+              ![
+                "id",
+                "comments",
+                "status",
+                "done",
+                "delete",
+                "fields",
+                "category",
+              ].includes(k),
           )
         )
           throw new StoreError(400, "Invalid or duplicate edit.");
@@ -220,14 +643,47 @@ function createStore(root, repositoryRoot = root) {
             throw new StoreError(400, "Comment must be text.");
           row.comments = edit.comments;
         }
+        if ("category" in edit) {
+          if (
+            file !== TODO ||
+            typeof edit.category !== "string" ||
+            !edit.category.trim()
+          )
+            throw new StoreError(
+              400,
+              "A to-do category must be nonempty text.",
+            );
+          row.category = edit.category;
+        }
         if ("status" in edit) {
-          if (file === TODO || !STATUSES.includes(edit.status))
+          if (
+            file === TODO ||
+            !configuration.statuses.some((s) => s.name === edit.status)
+          )
             throw new StoreError(400, "Invalid progress status.");
           if (row.status !== edit.status) {
             row.status = edit.status;
             row.statusAt = /* @__PURE__ */ new Date().toISOString();
-            if (row.status === "Done") row.progress = 100;
+            if (completeStatus(row.status, configuration)) row.progress = 100;
             else if (row.progress === 100) delete row.progress;
+          }
+        }
+        if ("fields" in edit) {
+          if (
+            !edit.fields ||
+            typeof edit.fields !== "object" ||
+            Array.isArray(edit.fields) ||
+            Object.keys(edit.fields).some(
+              (k) => !configuration.fields.some((f) => f.key === k),
+            )
+          )
+            throw new StoreError(
+              400,
+              "Only configured custom fields can be edited here.",
+            );
+          for (const [key, value] of Object.entries(edit.fields)) {
+            if (value === null) delete row[key];
+            else row[key] = value;
           }
         }
         if ("done" in edit) {
@@ -404,6 +860,7 @@ function createStore(root, repositoryRoot = root) {
       if (!title.trim()) throw new StoreError(400, "A title is required.");
       const resolved = await resolveFile(file);
       const rows = JSON.parse(await fs.readFile(resolved, "utf8"));
+      const { configuration } = await projectConfiguration();
       const now = /* @__PURE__ */ new Date().toISOString();
       const row = {
         id: `${file === TODO ? "T" : "W"}-${randomUUID().slice(0, 8)}`,
@@ -412,7 +869,7 @@ function createStore(root, repositoryRoot = root) {
         ...(file === TODO
           ? { task: title, category, done: false, doneAt: null }
           : {
-              status: "To do",
+              status: configuration.statuses.find((s) => !s.complete).name,
               statusAt: now,
               ...(/(?:^|\/)bug\./.test(file)
                 ? { bug: title }
@@ -461,13 +918,26 @@ function createStore(root, repositoryRoot = root) {
         row.statusAt = /* @__PURE__ */ new Date().toISOString();
       if (row.done !== done)
         row.doneAt = row.done ? /* @__PURE__ */ new Date().toISOString() : null;
-      if (row.status === "Done" || row.done) row.progress = 100;
+      const { configuration } = await projectConfiguration();
+      for (const f of configuration.fields)
+        if (Object.hasOwn(patch, f.key) && patch[f.key] === null)
+          delete row[f.key];
+      if (completeStatus(row.status, configuration) || row.done)
+        row.progress = 100;
+      else if (
+        row.progress === 100 &&
+        (row.status !== status || row.done !== done)
+      )
+        delete row.progress;
       await validate(rows, file);
       await atomic(resolved, rows);
       return { ok: true, row };
     });
   }
   return {
+    projectConfiguration,
+    previewConfiguration,
+    saveConfiguration,
     withLock: locked,
     workspace,
     save,

@@ -66,4 +66,111 @@ test("HTTP rejects external origins, missing mutation headers and unregistered p
   const body = await read.json();
   assert.equal(body.project.id, "fixture");
   assert.equal(body.files[0].rows.length, 0);
+  assert.deepEqual(body.projectSummaries, [
+    { id: "fixture", progress: 0, todos: 0 },
+  ]);
+  const second = path.join(dir, "second");
+  await fs.mkdir(path.join(second, "data"), { recursive: true });
+  const at = "2026-01-01T10:00:00Z";
+  await fs.writeFile(
+    path.join(second, "data/feature.work.json"),
+    JSON.stringify([
+      {
+        id: "W1",
+        task: "Synthetic active work",
+        status: "Doing",
+        statusAt: at,
+        createdAt: at,
+      },
+      {
+        id: "W2",
+        task: "Synthetic finished work",
+        status: "Done",
+        statusAt: at,
+        createdAt: at,
+      },
+    ]),
+  );
+  await fs.writeFile(
+    path.join(second, "data/todo.json"),
+    JSON.stringify([
+      {
+        id: "T1",
+        task: "Synthetic open todo",
+        category: "General",
+        createdAt: at,
+        done: false,
+        doneAt: null,
+      },
+      {
+        id: "T2",
+        task: "Synthetic complete todo",
+        category: "General",
+        createdAt: at,
+        done: true,
+        doneAt: at,
+      },
+    ]),
+  );
+  await fs.writeFile(
+    path.join(second, "file-icons.json"),
+    JSON.stringify({
+      "data/feature.work.json": { icon: "icons/file.svg" },
+      "data/todo.json": { icon: "icons/todo.svg" },
+    }),
+  );
+  const registry = JSON.parse(
+    await fs.readFile(path.join(dir, "projects.json"), "utf8"),
+  );
+  registry.push({
+    id: "second",
+    name: "Second",
+    root: second,
+    dataDir: second,
+  });
+  await fs.writeFile(path.join(dir, "projects.json"), JSON.stringify(registry));
+  const overview = await (
+    await handle(
+      new Request("http://localhost:8766/api/workspace?project=fixture"),
+      "workspace",
+    )
+  ).json();
+  assert.deepEqual(
+    overview.projectSummaries.find((s: any) => s.id === "second"),
+    { id: "second", progress: 1, todos: 1 },
+  );
+  const importResponse = await handle(
+    new Request(
+      "http://localhost:8766/api/project-configuration-import?project=fixture",
+      {
+        method: "POST",
+        headers: { "X-Progress-Save": "1" },
+        body: JSON.stringify({ sourceProject: "second" }),
+      },
+    ),
+    "project-configuration-import",
+  );
+  assert.equal(importResponse.status, 200);
+  const imported = await importResponse.json();
+  assert.equal(imported.source.id, "second");
+  assert.equal(imported.configuration.statuses.length, 4);
+  const targetAfter = await (
+    await handle(
+      new Request("http://localhost:8766/api/workspace?project=fixture"),
+      "workspace",
+    )
+  ).json();
+  assert.equal(targetAfter.files[0].rows.length, 0);
+  const badImport = await handle(
+    new Request(
+      "http://localhost:8766/api/project-configuration-import?project=fixture",
+      {
+        method: "POST",
+        headers: { "X-Progress-Save": "1" },
+        body: JSON.stringify({ sourceProject: "not-registered" }),
+      },
+    ),
+    "project-configuration-import",
+  );
+  assert.equal(badImport.status, 404);
 });

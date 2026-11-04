@@ -1,5 +1,6 @@
 import { projects, projectStore } from "./registry";
 import { StoreError } from "./store";
+import { TODO, isComplete } from "./model";
 import { storageSettings, setStorageOrigin } from "./vault";
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
 const MAX = 20 * 1024 * 1024;
@@ -45,12 +46,53 @@ export async function handle(
     );
     const { store } = selected;
     if (request.method === "GET") {
-      if (action === "workspace")
+      if (action === "workspace") {
+        const workspace = await store.workspace();
+        const projectSummaries = await Promise.all(
+          selected.projects.map(async (project) => {
+            try {
+              const data =
+                project.id === selected.project.id
+                  ? workspace
+                  : await (await projectStore(project.id)).store.workspace();
+              const progressFiles = data.files.filter((f) => f.path !== TODO),
+                todo = data.files.find((f) => f.path === TODO);
+              return {
+                id: project.id,
+                progress: progressFiles.some((f) => f.error)
+                  ? null
+                  : progressFiles.reduce(
+                      (n, f) =>
+                        n +
+                        f.rows.filter(
+                          (row) => !isComplete(row, f.path, data.configuration),
+                        ).length,
+                      0,
+                    ),
+                todos: todo?.error
+                  ? null
+                  : todo?.rows.filter((row) => !row.done).length || 0,
+              };
+            } catch (error) {
+              console.error(`[petal:project-summary] ${project.id}`, error);
+              return {
+                id: project.id,
+                progress: null,
+                todos: null,
+                error: "Counts unavailable",
+              };
+            }
+          }),
+        );
         return reply({
-          ...(await store.workspace()),
+          ...workspace,
+          projectSummaries,
           projects: selected.projects,
           project: selected.project,
         });
+      }
+      if (action === "project-configuration")
+        return reply(await store.projectConfiguration());
       if (action === "files") return reply({ files: await store.list() });
       if (["__save", "__delete", "__checkpoint"].includes(action))
         return reply({
@@ -95,6 +137,33 @@ export async function handle(
       throw new StoreError(400, "Expected a JSON object.");
     if (action === "settings")
       return reply(await setStorageOrigin(body.origin));
+    if (action === "project-configuration-import") {
+      if (typeof body.sourceProject !== "string")
+        throw new StoreError(400, "Choose a registered source workspace.");
+      const source = await projectStore(body.sourceProject);
+      return reply({
+        configuration: (await source.store.projectConfiguration())
+          .configuration,
+        source: { id: source.project.id, name: source.project.name },
+      });
+    }
+    if (action === "project-configuration-preview")
+      return reply(
+        await store.previewConfiguration(
+          body.configuration,
+          body.revision,
+          body.mapping,
+        ),
+      );
+    if (action === "project-configuration")
+      return reply(
+        await store.saveConfiguration(
+          body.configuration,
+          body.revision,
+          body.mapping,
+          body.token,
+        ),
+      );
     if (typeof body.file !== "string")
       throw new StoreError(400, "Missing file path.");
     if (kind === "Delete")

@@ -78,7 +78,7 @@ export async function ensureVault() {
   }
   await fs.writeFile(
     path.join(vaultDir, ".gitignore"),
-    ".petal-write-lock/\n**/.petal-write-lock/\n*.tmp\n**/*.tmp\n",
+    ".petal-write-lock/\n**/.petal-write-lock/\n*.tmp\n**/*.tmp\n**/.petal-config-transaction.json\n",
   );
 }
 export async function readProjects(): Promise<Project[]> {

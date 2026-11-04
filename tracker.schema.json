@@ -10,8 +10,7 @@
   "$defs": {
     "status": {
       "type": "string",
-      "enum": ["To do", "Doing", "Waiting", "Done"],
-      "description": "To do: not started. Doing: investigation, implementation or verification underway, including partial fixes. Waiting: needs a decision or external dependency; explain in statusDetail. Done: no remaining action, including deliberate closure; preserve the outcome in statusDetail.",
+      "description": "Lifecycle name configured for the selected project. Completion rules are defined by project configuration.",
       "x-ui": {
         "To do": {
           "tone": "gray",
@@ -29,7 +28,9 @@
           "tone": "green",
           "since": "Completed"
         }
-      }
+      },
+      "minLength": 1,
+      "pattern": "\\S"
     },
     "row": {
       "type": "object",
@@ -101,7 +102,7 @@
           "type": "string",
           "minLength": 1,
           "pattern": "\\S",
-          "description": "Single organizational section. Admin-fix replaces the retired type=Admin fix classification; do not add a separate type column."
+          "description": "Optional project-defined organizational section."
         },
         "report": {
           "type": "string",

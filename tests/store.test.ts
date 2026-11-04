@@ -195,3 +195,30 @@ test("checkpoint commits only tracker files and excludes writer lock and unrelat
     "source.txt",
   );
 });
+
+test("to-do category edits use revision checks and preserve lifecycle dates", async (t) => {
+  const { store } = await fixture(t),
+    todo = (await store.workspace()).files.find(
+      (f) => f.path === "data/todo.json",
+    )!;
+  await store.save(todo.path, todo.revision, [
+    { id: "T1", category: "Personal" },
+  ]);
+  const saved = (await store.workspace()).files.find(
+    (f) => f.path === todo.path,
+  )!;
+  assert.equal(saved.rows[0].category, "Personal");
+  assert.equal(saved.rows[0].createdAt, at);
+  assert.equal(saved.rows[0].doneAt, null);
+  await assert.rejects(
+    store.save(todo.path, todo.revision, [{ id: "T1", category: "Stale" }]),
+  );
+  const work = (await store.workspace()).files.find(
+    (f) => f.path === "data/feature.work.json",
+  )!;
+  await assert.rejects(
+    store.save(work.path, work.revision, [
+      { id: "W1", category: "Wrong mode" },
+    ]),
+  );
+});

@@ -1,3 +1,4 @@
+import { activitySnapshot } from "./activity";
 import { addWorkspace } from "./onboarding";
 import { projects, projectStore } from "./registry";
 import { StoreError } from "./store";
@@ -38,6 +39,8 @@ export async function handle(
         pid: process.pid,
         instance: process.env.PETAL_INSTANCE,
       });
+    if (request.method === "GET" && action === "activity")
+      return reply(await activitySnapshot());
     if (request.method === "GET" && action === "projects")
       return reply({ projects: await projects() });
     if (request.method === "GET" && action === "settings")

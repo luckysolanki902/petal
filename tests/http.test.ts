@@ -182,4 +182,25 @@ test("HTTP rejects external origins, missing mutation headers and unregistered p
     "project-configuration-import",
   );
   assert.equal(badImport.status, 404);
+  const activity = await handle(
+    new Request("http://localhost:8766/api/activity?project=not-registered"),
+    "activity",
+  );
+  assert.equal(activity.status, 200);
+  const activityBody = await activity.json();
+  assert.equal(activityBody.projects.length, 2);
+  assert.ok(
+    activityBody.rows.some(
+      (r: any) =>
+        r.project === "second" && r.row === "W1" && r.status === "Doing",
+    ),
+  );
+  assert.deepEqual(activityBody.unavailable, []);
+  const forbiddenActivity = await handle(
+    new Request("http://localhost:8766/api/activity", {
+      headers: { origin: "https://example.com" },
+    }),
+    "activity",
+  );
+  assert.equal(forbiddenActivity.status, 403);
 });

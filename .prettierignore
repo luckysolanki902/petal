@@ -1,0 +1,3 @@
+# Generated upstream SVGs are minified by scripts/build-icons.mjs (SVGO).
+icons/brand-*.svg
+icons/work-*.svg

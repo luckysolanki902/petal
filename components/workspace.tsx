@@ -1419,7 +1419,7 @@ export default function ProgressWorkspace() {
               aria-pressed={settingsSection === "backup"}
               onClick={() => setSettingsSection("backup")}
             >
-              Git backup
+              Global Git backup
             </button>
           </nav>
           {settingsOpen && data && (
@@ -1476,8 +1476,11 @@ export default function ProgressWorkspace() {
             </section>
           )}
           <section hidden={settingsSection !== "backup"}>
-            <h2>Data repository</h2>
-            <p>All projects share one local Git repository.</p>
+            <h2>Global data repository</h2>
+            <p>
+              Applies to every workspace on this machine. All workspaces share
+              this Git repository and push destination.
+            </p>
             <code className="storage-path">{storage?.directory}</code>
             <label htmlFor="storage-origin">
               Git origin <span>Optional</span>
@@ -1522,7 +1525,7 @@ export default function ProgressWorkspace() {
                   })
                 }
               >
-                Save settings
+                Save global settings
               </button>
             </div>
           </section>

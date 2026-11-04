@@ -49,9 +49,11 @@ async function selectProject() {
     ? list.find((p) => p.id === name || p.name === name)
     : list
         .filter((p) => cwd === p.root || cwd.startsWith(p.root + path.sep))
-        .sort((a, b) => b.root.length - a.root.length)[0] || list[0];
+        .sort((a, b) => b.root.length - a.root.length)[0];
   if (!p)
-    throw new Error("No project found. Run petal init in a project first.");
+    throw new Error(
+      "No matching workspace. Run petal init in this project, or pass --project ID from petal projects.",
+    );
   return p;
 }
 async function register(root, dataDir, name) {
@@ -100,7 +102,11 @@ async function init() {
   );
   const root = await fs.realpath(target);
   const existing = (await projects()).find((p) => p.root === root);
-  if (existing) return existing;
+  if (existing) {
+    await agentFiles(root);
+    console.log(`Workspace ready: ${existing.name} (${existing.id})`);
+    return existing;
+  }
   const vault = await import("../dist/vault.mjs");
   await vault.ensureVault();
   const id = createHash("sha256").update(root).digest("hex").slice(0, 12);
@@ -110,7 +116,9 @@ async function init() {
       throw new Error(
         `${dir} exists but is not a Petal workspace; no files were overwritten.`,
       );
-    return register(root, dir, flag("--name"));
+    const project = await register(root, dir, flag("--name"));
+    await agentFiles(root);
+    return project;
   }
   await fs.mkdir(path.join(dir, "data"), { recursive: true });
   await atomic(path.join(dir, "data", "todo.json"), []);
@@ -127,7 +135,78 @@ async function init() {
     path.join(dir, ".gitignore"),
     ".petal-write-lock/\n*.tmp\n",
   );
-  return register(root, dir, flag("--name"));
+  const project = await register(root, dir, flag("--name"));
+  await agentFiles(root);
+  return project;
+}
+const agentBlock = `<!-- petal:start -->
+## Petal work tracking
+Use the Petal skill for project work. Run \`petal task list\` from this source directory to read this workspace's tasks, revisions, statuses, and custom fields. Run \`petal projects\` and use an explicit \`--project ID\` if the directory is ambiguous. Never use another workspace as a fallback. Preserve evidence and IDs; use revision-checked CLI updates. Do not checkpoint or push without user authorization.
+If the CLI is unavailable, report it; install Petal and run \`petal setup\`, then \`petal init\` in this project. Do not invent tracking results.
+<!-- petal:end -->`;
+async function agentFiles(root) {
+  if (args.includes("--no-agent-files")) return;
+  for (const name of ["AGENTS.md", "CLAUDE.md"]) {
+    const file = path.join(root, name);
+    let before = "";
+    try {
+      if ((await fs.lstat(file)).isSymbolicLink())
+        throw new Error(
+          `Refusing to rewrite symlink ${file}; add Petal instructions manually.`,
+        );
+      before = await fs.readFile(file, "utf8");
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+    const start = before.indexOf("<!-- petal:start -->");
+    const end = before.indexOf("<!-- petal:end -->");
+    if (start < 0 !== end < 0 || (start >= 0 && end < start))
+      throw new Error(
+        `Incomplete Petal instruction block in ${file}; repair it before retrying.`,
+      );
+    const after =
+      start < 0
+        ? before +
+          (before && !before.endsWith("\n") ? "\n\n" : "\n") +
+          agentBlock +
+          "\n"
+        : before.slice(0, start) +
+          agentBlock +
+          before.slice(end + "<!-- petal:end -->".length);
+    if (after !== before) {
+      const temp = file + "." + randomUUID() + ".tmp";
+      try {
+        await fs.writeFile(temp, after, { mode: 0o644, flag: "wx" });
+        await fs.rename(temp, file);
+      } finally {
+        await fs.rm(temp, { force: true });
+      }
+      console.log(`Added project agent instructions: ${file}`);
+    }
+  }
+}
+async function doctor() {
+  console.log(`Petal installation: ${APP}`);
+  console.log(`Global data: ${(await import("../dist/vault.mjs")).vaultDir}`);
+  console.log(`Registered workspaces: ${(await projects()).length}`);
+  try {
+    const p = await selectProject();
+    console.log(`Current workspace: ${p.name} (${p.id})`);
+    for (const name of ["AGENTS.md", "CLAUDE.md"]) {
+      const text = await fs
+        .readFile(path.join(p.root, name), "utf8")
+        .catch((e) => {
+          if (e.code === "ENOENT") return "";
+          throw e;
+        });
+      console.log(
+        `${name}: ${text.includes("<!-- petal:start -->") ? "connected" : "run petal init to connect"}`,
+      );
+    }
+  } catch (error) {
+    console.log(error.message);
+    process.exitCode = 1;
+  }
 }
 async function health(state) {
   if (!state) return null;
@@ -238,7 +317,9 @@ async function start() {
   let project;
   try {
     project = await selectProject();
-  } catch {}
+  } catch (error) {
+    if (flag("--project")) throw error;
+  }
   const url = `http://localhost:${state.port}/${project ? "?project=" + project.id : ""}`;
   console.log(`Petal → ${url}`);
   if (!args.includes("--no-open")) {
@@ -259,7 +340,11 @@ async function start() {
 }
 async function skills() {
   const targets = {
-    claude: path.join(os.homedir(), ".claude", "skills", "petal"),
+    claude: path.join(
+      process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude"),
+      "skills",
+      "petal",
+    ),
     codex: path.join(os.homedir(), ".agents", "skills", "petal"),
     opencode: path.join(
       process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"),
@@ -340,12 +425,21 @@ async function task() {
     "Use task list, task add --title TITLE [--todo], or task update ID --file FILE --input PATCH.json --revision REVISION.",
   );
 }
-const help = `Petal — a little progress, everywhere.\n\npetal                         Start/reuse the dashboard and open this project\npetal --no-open [--port 8766]   Start in the background\npetal init [path] [--name X]   Create central tracker and register a project\npetal register PATH --data DIR [--name X]  Connect existing tracker data\npetal projects                List registered projects\npetal status | stop           Inspect or stop the verified local server\npetal skills install [--agent all|claude|codex|opencode]\npetal task list [--project ID] Read tasks and file revisions as JSON\npetal task add --title TEXT [--todo] [--file data/feature.work.json]\npetal task update ID --file FILE --input PATCH.json --revision REVISION\n\nNo cloud account, telemetry or background agent calls. Git publishing is explicit in the dashboard.\n`;
+const help = `Petal — a little progress, everywhere.\n\npetal                         Start/reuse the dashboard and open this project\npetal --no-open [--port 8766]   Start in the background\npetal setup                   Install global agent skills (no workspace created)\npetal doctor                  Check the current workspace connection\npetal init [path] [--name X]   Register workspace and connect AGENTS.md/CLAUDE.md\n                              Use --no-agent-files to skip instruction files\npetal register PATH --data DIR [--name X]  Connect existing tracker data\npetal projects                List registered projects\npetal status | stop           Inspect or stop the verified local server\npetal skills install [--agent all|claude|codex|opencode]\npetal task list [--project ID] Read tasks and file revisions as JSON\npetal task add --title TEXT [--todo] [--file data/feature.work.json]\npetal task update ID --file FILE --input PATCH.json --revision REVISION\n\nNo cloud account, telemetry or background agent calls. Git publishing is explicit in the dashboard.\n`;
 try {
   if (args.includes("--help") || args[0] === "help") {
     console.log(help);
   } else
     switch (args[0]) {
+      case "setup":
+        await skills();
+        console.log(
+          "Global skills installed. Next: cd /path/to/project && petal init && petal",
+        );
+        break;
+      case "doctor":
+        await doctor();
+        break;
       case "init":
         await init();
         break;

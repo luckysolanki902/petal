@@ -30,6 +30,15 @@ test("HTTP rejects external origins, missing mutation headers and unregistered p
     "workspace",
   );
   assert.equal(unknown.status, 404);
+  const globalSettings = await handle(
+    new Request("http://localhost:8766/api/settings?project=missing", {
+      method: "POST",
+      headers: { "X-Progress-Save": "1" },
+      body: JSON.stringify({ origin: "" }),
+    }),
+    "settings",
+  );
+  assert.equal(globalSettings.status, 200);
   const root = path.join(dir, "project");
   await fs.mkdir(path.join(root, "data"), { recursive: true });
   await fs.writeFile(path.join(root, "data/todo.json"), "[]");

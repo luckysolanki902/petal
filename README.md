@@ -23,13 +23,13 @@ cd petal
 npm ci
 npm run build
 npm link
-petal skills install
+petal setup
 cd /path/to/your/project
 petal init
 petal
 ```
 
-`petal init` creates a tracker under `~/.config/petal/data/projects/` and registers the project locally. It never rewrites your source code or agent configuration. Repeat it in another project; the dashboard's project selector switches between them. `petal` starts or reuses a background server at `http://localhost:8766` and opens your browser.
+`petal init` creates a tracker under `~/.config/petal/data/projects/` and registers the project locally. It adds a small managed section to the source project’s `AGENTS.md` and `CLAUDE.md`, preserving existing instructions. This lets agents discover tracking from the source directory. Use `--no-agent-files` to skip this. Repeat it in another project; the dashboard's project selector switches between them. `petal` starts or reuses a background server at `http://localhost:8766` and opens your browser.
 
 The npm package name is `petal-workspace`; it is **not yet published to npm**. Use the source instructions above or create a local installable tarball:
 
@@ -100,6 +100,21 @@ A patch contains only changed fields, for example:
 ```
 
 IDs and creation dates are immutable. The CLI sets status/completion timestamps. Invalid or stale edits leave the saved file untouched. Legacy trackers must be migrated to the current schema before registration; registration never silently rewrites them.
+
+## Global installation and adding workspaces
+
+After the global `npm link` or tarball install above, run `petal setup` once per user. This installs the bundled skills without creating a workspace. In every source project you want to track, run:
+
+```sh
+cd /path/to/project
+petal init --name "My workspace"
+petal doctor
+petal
+```
+
+Repeat for another project. Each workspace has its own workflow, categories, and fields; **Settings → Global Git backup** applies to all workspaces. The CLI selects the nearest registered source root. Task commands outside registered projects fail instead of silently editing another workspace; use `--project ID` when explicit selection is needed. Re-running `init` connects missing agent instruction files without replacing tasks.
+
+Skills provide reusable tracking instructions; project instruction files tell the agent to use them here. Discovery follows [Codex skills](https://developers.openai.com/codex/skills), [Claude Code skills](https://code.claude.com/docs/en/skills), and [OpenCode skills](https://opencode.ai/docs/skills/). Restart existing agent sessions after installing skills. Installation does not guarantee every model automatically invokes a skill; the project instructions and explicit `petal` invocation provide a direct path.
 
 ## Agent skills
 

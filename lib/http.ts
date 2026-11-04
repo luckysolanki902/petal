@@ -41,11 +41,11 @@ export async function handle(
       return reply({ projects: await projects() });
     if (request.method === "GET" && action === "settings")
       return reply(await storageSettings());
-    const selected = await projectStore(
-      new URL(request.url).searchParams.get("project"),
-    );
-    const { store } = selected;
+    const select = () =>
+      projectStore(new URL(request.url).searchParams.get("project"));
     if (request.method === "GET") {
+      const selected = await select();
+      const { store } = selected;
       if (action === "workspace") {
         const workspace = await store.workspace();
         const projectSummaries = await Promise.all(
@@ -112,7 +112,8 @@ export async function handle(
       throw new StoreError(403, `Missing X-Progress-${kind} header.`);
     if (request.method !== (kind === "Delete" ? "DELETE" : "POST"))
       throw new StoreError(405, "Method not allowed.");
-    if (kind === "Checkpoint") return reply(await store.checkpoint());
+    if (kind === "Checkpoint")
+      return reply(await (await select()).store.checkpoint());
     const reader = request.body?.getReader();
     if (!reader) throw new StoreError(400, "Missing request body.");
     let size = 0;
@@ -137,6 +138,7 @@ export async function handle(
       throw new StoreError(400, "Expected a JSON object.");
     if (action === "settings")
       return reply(await setStorageOrigin(body.origin));
+    const { store } = await select();
     if (action === "project-configuration-import") {
       if (typeof body.sourceProject !== "string")
         throw new StoreError(400, "Choose a registered source workspace.");

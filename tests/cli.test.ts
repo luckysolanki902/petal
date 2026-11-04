@@ -20,6 +20,21 @@ test("CLI registers multiple isolated projects and updates only the requested pr
   }
   const list = JSON.parse((await run("projects")).stdout);
   assert.equal(list.length, 2);
+  await assert.rejects(
+    run("task", "add", "--title", "Must not enter another workspace"),
+  );
+  const root = path.join(dir, "Alpha");
+  const instructions = await fs.readFile(path.join(root, "AGENTS.md"), "utf8");
+  assert.match(instructions, /petal task list/);
+  await fs.writeFile(path.join(root, "CLAUDE.md"), "Existing team rules\n");
+  await run("init", root);
+  const connected = await fs.readFile(path.join(root, "CLAUDE.md"), "utf8");
+  assert.ok(connected.startsWith("Existing team rules\n"));
+  await run("init", root);
+  assert.equal(
+    await fs.readFile(path.join(root, "CLAUDE.md"), "utf8"),
+    connected,
+  );
   await run(
     "task",
     "add",

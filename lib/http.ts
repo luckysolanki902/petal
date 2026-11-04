@@ -1,3 +1,4 @@
+import { addWorkspace } from "./onboarding";
 import { projects, projectStore } from "./registry";
 import { StoreError } from "./store";
 import { TODO, isComplete } from "./model";
@@ -138,6 +139,7 @@ export async function handle(
       throw new StoreError(400, "Expected a JSON object.");
     if (action === "settings")
       return reply(await setStorageOrigin(body.origin));
+    if (action === "workspaces") return reply(await addWorkspace(body));
     const { store } = await select();
     if (action === "project-configuration-import") {
       if (typeof body.sourceProject !== "string")

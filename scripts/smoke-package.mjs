@@ -62,6 +62,30 @@ try {
       `Installed package API failed (${response.status}): ${await response.text()}`,
     );
   const data = await response.json();
+  const extraProject = path.join(root, "extra-project");
+  await fs.mkdir(extraProject);
+  const added = await fetch(`http://127.0.0.1:${port}/api/workspaces`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Progress-Save": "1" },
+    body: JSON.stringify({
+      root: extraProject,
+      name: "Package onboarding",
+      skills: false,
+      agentFiles: true,
+    }),
+  });
+  if (!added.ok)
+    throw new Error(
+      `Installed package onboarding failed: ${await added.text()}`,
+    );
+  if (
+    !(await fs.readFile(path.join(extraProject, "CLAUDE.md"), "utf8")).includes(
+      "petal task list",
+    )
+  )
+    throw new Error(
+      "Packaged onboarding did not connect project instructions.",
+    );
   if (
     data.project.name !== "Package fixture" ||
     data.files.length !== 2 ||

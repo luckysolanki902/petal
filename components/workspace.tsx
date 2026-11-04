@@ -27,6 +27,7 @@ import FileIcon from "./file-icon";
 import { StackIcon, ChartLineUpIcon } from "@phosphor-icons/react";
 import CategoryBadge, { categoryStyle } from "./category-badge";
 import SelectMenu from "./select-menu";
+import AddWorkspace from "./add-workspace";
 import TodoDetails from "./todo-details";
 import { DetailValue, dateLabel } from "./detail-value";
 import {
@@ -644,6 +645,7 @@ export default function ProgressWorkspace() {
               }}
             />
           </div>
+          <AddWorkspace disabled={dirtyCount > 0 || busy} />
           <button
             className="button checkpoint"
             onClick={() => setConfirm("checkpoint")}
@@ -703,6 +705,16 @@ export default function ProgressWorkspace() {
           <button onClick={() => void refresh()}>Retry</button>
         </div>
       ))}
+      {!data && loadError && (
+        <section className="first-workspace">
+          <h2>Bring your project into Petal</h2>
+          <p>
+            Add a workspace to connect your project folder, tasks, and coding
+            agents.
+          </p>
+          <AddWorkspace first />
+        </section>
+      )}
       {mode === "progress" ? (
         <>
           <section className="file-navigation">

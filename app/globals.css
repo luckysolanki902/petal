@@ -3084,7 +3084,7 @@ textarea {
 }
 
 .rich-text a {
-  color: var(--text);
+  color: var(--ink);
   text-decoration: underline;
   text-decoration-color: currentColor;
   text-underline-offset: 3px;
@@ -3102,7 +3102,7 @@ textarea {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--paper);
 }
 .rich-text pre code {
   padding: 0;
@@ -3129,4 +3129,82 @@ textarea {
 .rich-text h4 {
   line-height: 1.35;
   margin: 20px 0 10px;
+}
+
+.workspace-onboarding {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0;
+}
+.workspace-onboarding::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+.workspace-onboarding .drawer-top strong,
+.agent-connect h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.onboarding-body {
+  padding: 28px;
+  display: grid;
+  gap: 12px;
+}
+.onboarding-body h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.onboarding-body p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 0 8px;
+}
+.onboarding-body > label {
+  font-weight: 600;
+  margin-top: 8px;
+}
+.onboarding-body > input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.agent-connect {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  margin-top: 12px;
+}
+.agent-connect h3 {
+  margin: 0 0 16px;
+  font-size: 15px;
+}
+.setup-choice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 16px 0;
+  cursor: pointer;
+}
+.setup-choice input {
+  margin-top: 4px;
+}
+.setup-choice small {
+  display: block;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 5px;
+}
+.agent-connect p {
+  font-size: 12px;
+  margin-bottom: 0;
+}
+.first-workspace {
+  padding: 48px 0;
 }

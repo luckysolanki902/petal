@@ -402,6 +402,45 @@ async function skills() {
     "Restart or refresh your agent session to discover the skill. Cloud-only chats require a separate local connection.",
   );
 }
+async function icons() {
+  const catalog = await read(path.join(APP, "icons", "catalog.json"), null);
+  if (!catalog)
+    throw new Error("Icon catalog is missing from this installation.");
+  if (args[1] === "list") {
+    const query = flag("--search", "").toLowerCase();
+    console.log(
+      JSON.stringify(
+        catalog.filter((i) =>
+          (i.id + " " + i.title + " " + i.kind).toLowerCase().includes(query),
+        ),
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+  const p = await selectProject(),
+    vault = await import("../dist/vault.mjs"),
+    { createStore } = await import("../dist/store.mjs");
+  const store = createStore(p.dataDir, vault.vaultDir);
+  if (args[1] === "auto") {
+    console.log(JSON.stringify(await store.autoIcons(), null, 2));
+    return;
+  }
+  if (args[1] === "set") {
+    const file = flag("--file"),
+      icon = flag("--icon");
+    if (!file || !icon)
+      throw new Error(
+        "Use petal icons set --file data/FILE.json --icon CATALOG_ID [--project ID]",
+      );
+    console.log(JSON.stringify(await store.assignIcon(file, icon), null, 2));
+    return;
+  }
+  throw new Error(
+    "Use petal icons list [--search TEXT], icons set --file FILE --icon ID, or icons auto.",
+  );
+}
 async function task() {
   const p = await selectProject();
   const { createStore } = await import("../dist/store.mjs");
@@ -453,7 +492,7 @@ async function task() {
     "Use task list, task add --title TITLE [--todo], or task update ID --file FILE --input PATCH.json --revision REVISION.",
   );
 }
-const help = `Petal — a little progress, everywhere.\n\npetal                         Start/reuse the dashboard and open this project\npetal --no-open [--port 8766]   Start in the background\npetal setup                   Install global agent skills (no workspace created)\npetal doctor                  Check the current workspace connection\npetal init [path] [--name X]   Register workspace and connect AGENTS.md/CLAUDE.md\n                              Use --no-agent-files to skip instruction files\npetal register PATH --data DIR [--name X]  Connect existing tracker data\npetal projects                List registered projects\npetal status | stop           Inspect or stop the verified local server\npetal skills install [--agent all|claude|codex|opencode]\npetal task list [--project ID] Read tasks and file revisions as JSON\npetal task add --title TEXT [--todo] [--file data/feature.work.json]\npetal task update ID --file FILE --input PATCH.json --revision REVISION\n\nNo cloud account, telemetry or background agent calls. Git publishing is explicit in the dashboard.\n`;
+const help = `Petal — a little progress, everywhere.\n\npetal                         Start/reuse the dashboard and open this project\npetal --no-open [--port 8766]   Start in the background\npetal setup                   Install global agent skills (no workspace created)\npetal doctor                  Check the current workspace connection\npetal init [path] [--name X]   Register workspace and connect AGENTS.md/CLAUDE.md\n                              Use --no-agent-files to skip instruction files\npetal register PATH --data DIR [--name X]  Connect existing tracker data\npetal icons list [--search X]  Search the bundled logo/work icon catalog\npetal icons set --file FILE --icon ID [--project ID]\npetal icons auto [--project ID] Assign relevant icons to existing collections\npetal projects                List registered projects\npetal status | stop           Inspect or stop the verified local server\npetal skills install [--agent all|claude|codex|opencode]\npetal task list [--project ID] Read tasks and file revisions as JSON\npetal task add --title TEXT [--todo] [--file data/feature.work.json]\npetal task update ID --file FILE --input PATCH.json --revision REVISION\n\nNo cloud account, telemetry or background agent calls. Git publishing is explicit in the dashboard.\n`;
 try {
   if (args.includes("--help") || args[0] === "help") {
     console.log(help);
@@ -492,6 +531,9 @@ try {
       case "skills":
         if (args[1] !== "install") throw new Error("Use petal skills install");
         await skills();
+        break;
+      case "icons":
+        await icons();
         break;
       case "task":
         await task();

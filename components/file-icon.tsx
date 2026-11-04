@@ -1,4 +1,5 @@
 "use client";
+import { iconHue } from "../lib/icon-color";
 import { useState } from "react";
 import {
   ArchiveIcon,
@@ -30,6 +31,27 @@ export default function FileIcon({
   file: string;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
+  if (/^icons\/(brand|work)-[a-z0-9._-]+\.svg$/.test(icon) && failed !== icon) {
+    const source = `/${icon}`;
+    return (
+      <span
+        aria-hidden="true"
+        className="catalog-file-icon"
+        style={{
+          backgroundColor: `hsl(${iconHue(file)} 45% var(--icon-lightness))`,
+          maskImage: `url(${JSON.stringify(source)})`,
+          WebkitMaskImage: `url(${JSON.stringify(source)})`,
+        }}
+      >
+        <img
+          src={source}
+          alt=""
+          style={{ display: "none" }}
+          onError={() => setFailed(icon)}
+        />
+      </span>
+    );
+  }
   if (!generic.has(icon) && failed !== icon)
     return (
       <img

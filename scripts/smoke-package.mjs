@@ -62,6 +62,18 @@ try {
       `Installed package API failed (${response.status}): ${await response.text()}`,
     );
   const data = await response.json();
+  for (const asset of [
+    "brand-posthog.svg",
+    "brand-docker.svg",
+    "brand-nextdotjs.svg",
+    "work-bug.svg",
+    "work-server.svg",
+  ]) {
+    const icon = await fetch(`http://127.0.0.1:${port}/icons/${asset}`);
+    if (!icon.ok || !(await icon.text()).includes("<svg"))
+      throw new Error(`Installed icon asset missing: ${asset}`);
+  }
+
   const activityResponse = await fetch(`http://127.0.0.1:${port}/api/activity`);
   if (!activityResponse.ok)
     throw new Error(

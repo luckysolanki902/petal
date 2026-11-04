@@ -3462,3 +3462,20 @@ textarea {
 .work-table tr[tabindex="-1"]:focus {
   outline: none;
 }
+
+.catalog-file-icon {
+  --icon-lightness: 40%;
+  display: inline-block;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+  mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+}
+:root[data-theme="dark"] .catalog-file-icon {
+  --icon-lightness: 73%;
+}

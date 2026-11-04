@@ -1,3 +1,4 @@
+import { inferIcon, isGenericIcon, iconCatalog } from "./icon-catalog";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
@@ -414,7 +415,10 @@ export function createStore(root: string, repositoryRoot: string = root) {
     }
     const files = await Promise.all(
       (await list()).map(async (file) => {
-        let icon = icons[file]?.icon || "icons/file.svg";
+        let icon =
+          typeof icons[file]?.icon === "string"
+            ? icons[file].icon
+            : "icons/file.svg";
         if (
           !/^icons\/[a-z0-9._-]+\.(svg|png|webp)$/i.test(icon) &&
           !/^https:\/\//.test(icon)
@@ -424,6 +428,11 @@ export function createStore(root: string, repositoryRoot: string = root) {
           const text = await fs.readFile(await resolveFile(file), "utf8");
           const rows = JSON.parse(text);
           await validate(rows, file, configuration);
+          if (isGenericIcon(icon))
+            icon = inferIcon(
+              file,
+              rows.map((r: Row) => String(r.task || r.bug || "")),
+            );
           return { path: file, rows, revision: digest(text), icon };
         } catch (error) {
           return {
@@ -680,6 +689,48 @@ export function createStore(root: string, repositoryRoot: string = root) {
       };
     });
   }
+  async function assignIcon(file: string, id: string) {
+    return locked(async () => {
+      await resolveFile(file);
+      const entry =
+        iconCatalog.find((i) => i.id === id || i.path === id) ||
+        iconCatalog.find((i) => i.id === `brand-${id}`) ||
+        iconCatalog.find((i) => i.id === `work-${id}`);
+      if (!entry)
+        throw new StoreError(
+          400,
+          "Unknown icon. Run petal icons list to choose a catalog ID.",
+        );
+      const current = await json("file-icons.json");
+      if (!current || typeof current !== "object" || Array.isArray(current))
+        throw new StoreError(422, "file-icons.json must be an icon map.");
+      current[file] = { ...current[file], icon: entry.path };
+      await atomic(path.join(root, "file-icons.json"), current);
+      return { file, icon: entry.path };
+    });
+  }
+  async function autoIcons() {
+    return locked(async () => {
+      const ws = await workspace();
+      if (ws.files.some((f) => f.error) || ws.warnings.length)
+        throw new StoreError(
+          422,
+          "Fix tracker and metadata errors before assigning icons.",
+        );
+      const current = await json("file-icons.json");
+      const updates = ws.files.map((f) => ({
+        file: f.path,
+        icon: inferIcon(
+          f.path,
+          f.rows.map((r) => String(r.task || r.bug || "")),
+        ),
+      }));
+      for (const update of updates)
+        current[update.file] = { ...current[update.file], icon: update.icon };
+      await atomic(path.join(root, "file-icons.json"), current);
+      return { updates };
+    });
+  }
   async function deleteFile(file: string, revision: string) {
     return locked(async () => {
       if (path.basename(file).toLowerCase() === "todo.json")
@@ -795,6 +846,8 @@ export function createStore(root: string, repositoryRoot: string = root) {
     projectConfiguration,
     previewConfiguration,
     saveConfiguration,
+    assignIcon,
+    autoIcons,
     withLock: locked,
     workspace,
     save,

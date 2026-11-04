@@ -39,6 +39,27 @@ test("CLI registers multiple isolated projects and updates only the requested pr
     );
   const list = JSON.parse((await run("projects")).stdout);
   assert.equal(list.length, 2);
+  const icons = JSON.parse(
+    (await run("icons", "list", "--search", "posthog")).stdout,
+  );
+  assert.ok(icons.some((i: any) => i.id === "brand-posthog"));
+  await run(
+    "icons",
+    "set",
+    "--project",
+    list[0].id,
+    "--file",
+    "data/feature.work.json",
+    "--icon",
+    "brand-posthog",
+  );
+  assert.equal(
+    JSON.parse(
+      (await run("task", "list", "--project", list[0].id)).stdout,
+    ).files.find((f: any) => f.path === "data/feature.work.json").icon,
+    "icons/brand-posthog.svg",
+  );
+
   await assert.rejects(
     run("task", "add", "--title", "Must not enter another workspace"),
   );

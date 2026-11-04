@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   Bell,
   Check,
@@ -43,6 +43,7 @@ export default function Notifications({
   theme: "dark" | "light";
   onOpen: (n: Notice) => void;
 }) {
+  const panelId = useId();
   const panel = useRef<HTMLDivElement>(null),
     audio = useRef<AudioContext | null>(null),
     state = useRef<NotificationState>(structuredClone(EMPTY_NOTIFICATIONS)),
@@ -294,16 +295,16 @@ export default function Notifications({
         className="icon-button notification-trigger"
         aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
         title="Notifications"
-        onClick={() => {
-          setScope(project || "all");
-          panel.current?.togglePopover();
-        }}
+        popoverTarget={panelId}
+        popoverTargetAction="toggle"
+        onClick={() => setScope(project || "all")}
       >
         <Bell size={18} />
         {unread > 0 && <span>{unread > 99 ? "99+" : unread}</span>}
       </button>
       <div
         ref={panel}
+        id={panelId}
         popover="auto"
         className="notification-popover"
         aria-label="Notifications"

@@ -1567,13 +1567,14 @@ textarea::placeholder {
   font-size: 11px;
   font-weight: 600;
   color: #5f6555;
-  padding: 11px 14px;
+  padding: 13px 20px;
   white-space: nowrap;
 }
 .work-table td {
-  padding: 13px 14px;
+  padding: 22px 20px;
+  height: 92px;
   border-top: 1px solid #e7e6da;
-  vertical-align: middle;
+  vertical-align: top;
 }
 .work-table tbody tr:nth-child(even) {
   background: #f9f7ef;
@@ -1589,8 +1590,8 @@ textarea::placeholder {
   color: var(--muted);
 }
 .item-title {
-  min-width: 280px;
-  width: 40%;
+  min-width: 340px;
+  width: 46%;
 }
 .item-title > button,
 .row-notes button {
@@ -1601,6 +1602,8 @@ textarea::placeholder {
   line-height: 1.55;
 }
 .item-title > button {
+  font-size: 14.5px;
+  line-height: 1.65;
   font-weight: 500;
 }
 .item-title > button:hover,
@@ -1614,7 +1617,7 @@ textarea::placeholder {
   gap: 10px;
   font-size: 11px;
   color: var(--muted);
-  margin-top: 4px;
+  margin-top: 9px;
 }
 .row-date {
   min-width: 140px;
@@ -2246,10 +2249,8 @@ textarea {
   border-top: 1px solid var(--line);
 }
 .item-title > button {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  display: block;
+  overflow-wrap: anywhere;
 }
 
 .night-sky {
@@ -2669,4 +2670,17 @@ textarea {
 .work-table .row-date {
   min-width: 106px;
   white-space: nowrap;
+}
+
+/* Preserve the original tracker's comfortable reading rhythm on small screens. */
+@media (max-width: 700px) {
+  .work-table th {
+    padding: 12px 16px;
+  }
+  .work-table td {
+    padding: 18px 16px;
+  }
+  .item-title {
+    min-width: 300px;
+  }
 }

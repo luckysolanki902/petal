@@ -16,6 +16,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import SelectMenu from "./select-menu";
 import TodoDetails from "./todo-details";
 import { DetailValue, dateLabel } from "./detail-value";
 import {
@@ -586,9 +587,9 @@ export default function ProgressWorkspace() {
           </button>
           <div className="project-control">
             <span>WORKSPACE</span>
-            <select
-              className="project-select"
-              aria-label="Project"
+            <SelectMenu
+              className="project-dropdown"
+              label="Project"
               value={data?.project?.id || ""}
               disabled={dirtyCount > 0 || busy}
               title={
@@ -596,17 +597,14 @@ export default function ProgressWorkspace() {
                   ? "Save or discard drafts before switching projects"
                   : "Switch project"
               }
-              onChange={(e) => {
-                window.location.href =
-                  "/?project=" + encodeURIComponent(e.target.value);
+              options={(data?.projects || []).map((p) => ({
+                value: p.id,
+                label: p.name,
+              }))}
+              onChange={(value) => {
+                window.location.href = "/?project=" + encodeURIComponent(value);
               }}
-            >
-              {data?.projects?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           <button
             className="button checkpoint"
@@ -736,16 +734,33 @@ export default function ProgressWorkspace() {
             >
               <RotateCcw size={15} />
             </button>
-            <select
-              aria-label="Sort work"
+            <SelectMenu
+              label="Sort work"
               value={sort}
-              onChange={(e) => setSort(e.target.value)}
-            >
-              <option value="default">Needs attention first</option>
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-              <option value="progress">Most progress</option>
-            </select>
+              onChange={setSort}
+              options={[
+                {
+                  value: "default",
+                  label: "Needs attention first",
+                  description: "Waiting, then active work",
+                },
+                {
+                  value: "newest",
+                  label: "Newest first",
+                  description: "Most recently opened",
+                },
+                {
+                  value: "oldest",
+                  label: "Oldest first",
+                  description: "Earliest opened",
+                },
+                {
+                  value: "progress",
+                  label: "Most progress",
+                  description: "Highest completion first",
+                },
+              ]}
+            />
           </div>
         </div>
         <div className="list-toolbar">
@@ -1095,22 +1110,23 @@ export default function ProgressWorkspace() {
                         : "Mark complete"}
                     </button>
                   ) : (
-                    <label>
-                      Status
-                      <select
-                        value={selectedRow.status}
+                    <div className="status-field">
+                      <span className="select-field-label">Status</span>
+                      <SelectMenu
+                        label="Status"
+                        value={selectedRow.status || "To do"}
                         disabled={busy}
-                        onChange={(e) =>
+                        options={STATUSES.map((status) => ({
+                          value: status,
+                          label: status,
+                        }))}
+                        onChange={(value) =>
                           stage(selectedFile, selectedRow.id, {
-                            status: e.target.value as Status,
+                            status: value as Status,
                           })
                         }
-                      >
-                        {STATUSES.map((s) => (
-                          <option key={s}>{s}</option>
-                        ))}
-                      </select>
-                    </label>
+                      />
+                    </div>
                   )}
                   <div>
                     <label>

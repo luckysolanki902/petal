@@ -55,18 +55,20 @@ export default function AddWorkspace({
       <dialog
         ref={dialog}
         className="workspace-onboarding"
+        aria-labelledby={`${id}-title`}
         onCancel={(e) => {
           if (busy) e.preventDefault();
           else setOpen(false);
         }}
       >
         <header className="drawer-top">
-          <strong>
+          <strong id={`${id}-title`}>
             <FolderPlus size={18} /> New workspace
           </strong>
           <button
             className="icon-button"
             aria-label="Close workspace setup"
+            autoFocus
             disabled={busy}
             onClick={() => setOpen(false)}
           >
@@ -89,7 +91,6 @@ export default function AddWorkspace({
             onChange={(e) => setName(e.target.value)}
             placeholder="My project"
             disabled={busy}
-            autoFocus
           />
           <label htmlFor={`${id}-root`}>Project folder · full path</label>
           <input

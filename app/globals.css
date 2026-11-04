@@ -3140,6 +3140,24 @@ textarea {
   color: var(--ink);
   padding: 0;
 }
+.workspace-onboarding[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.workspace-onboarding > .drawer-top {
+  position: static;
+  flex: 0 0 auto;
+  gap: 16px;
+  padding: 18px 28px;
+  background: var(--paper);
+}
+.workspace-onboarding > .drawer-top strong {
+  min-width: 0;
+}
+.workspace-onboarding > .drawer-top svg {
+  flex-shrink: 0;
+}
 .workspace-onboarding::backdrop {
   background: rgb(0 0 0 / 45%);
 }
@@ -3150,6 +3168,10 @@ textarea {
   gap: 10px;
 }
 .onboarding-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 24px;
   padding: 28px;
   display: grid;
   gap: 12px;

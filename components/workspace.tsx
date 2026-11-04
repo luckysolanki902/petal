@@ -327,15 +327,37 @@ export default function ProgressWorkspace() {
       ),
     ),
   ].sort();
+  const categoryOf = (row: Row) =>
+    String(row.category || row.section || "Uncategorised");
+  const matchesProgress = (row: Row, status: string) =>
+    status === "All" ||
+    (status === "Active" && row.status !== "Done") ||
+    row.status === status;
+  const matchesTodo = (row: Row, status: string) =>
+    status === "All" || !!row.done === (status === "Done");
+  const statusCount = (status: string) =>
+    items.filter(({ row }) =>
+      mode === "todo"
+        ? (category === "all" || categoryOf(row) === category) &&
+          matchesTodo(row, status)
+        : matchesProgress(row, status),
+    ).length;
+  const categoryCount = (value: string) =>
+    items.filter(
+      ({ row }) =>
+        matchesTodo(row, todoFilter) &&
+        (value === "all" || categoryOf(row) === value),
+    ).length;
+  const fileCount = (file: TrackerFile) =>
+    file.rows.filter((row) =>
+      matchesProgress(effective(row, file.path), filter),
+    ).length;
   const visible = items
     .filter(({ row }) =>
       mode === "todo"
-        ? (todoFilter === "All" || row.done === (todoFilter === "Done")) &&
-          (category === "all" ||
-            String(row.category || "Uncategorised") === category)
-        : filter === "All" ||
-          (filter === "Active" && row.status !== "Done") ||
-          row.status === filter,
+        ? matchesTodo(row, todoFilter) &&
+          (category === "all" || categoryOf(row) === category)
+        : matchesProgress(row, filter),
     )
     .sort((a, b) => {
       if (sort === "progress")
@@ -683,18 +705,28 @@ export default function ProgressWorkspace() {
                 aria-pressed={scope === "all"}
               >
                 <FolderHeart size={17} />
-                All work
+                All work{" "}
+                <span className="chip-count">
+                  {
+                    allProgress.filter(({ row }) =>
+                      matchesProgress(row, filter),
+                    ).length
+                  }
+                </span>
               </button>
               {progressFiles.map((file) => (
                 <button
                   key={file.path}
                   className={`file-chip ${scope === file.path ? "selected" : ""} ${file.error ? "has-error" : ""}`}
                   onClick={() => setScope(file.path)}
-                  aria-label={`Open ${fileLabel(file.path)}`}
+                  aria-label={`Open ${fileLabel(file.path)}${file.error ? " · file error" : ` · ${fileCount(file)} items`}`}
                   aria-pressed={scope === file.path}
                   title={file.path}
                 >
                   <FileIcon icon={file.icon} />
+                  {!file.error && (
+                    <span className="chip-count">{fileCount(file)}</span>
+                  )}
                   {file.error && <i />}
                 </button>
               ))}
@@ -783,6 +815,7 @@ export default function ProgressWorkspace() {
                 }
               >
                 {value}
+                <span className="chip-count">{statusCount(value)}</span>
               </button>
             ))}
           </div>
@@ -796,7 +829,8 @@ export default function ProgressWorkspace() {
               aria-pressed={category === "all"}
               onClick={() => setCategory("all")}
             >
-              All categories
+              All categories{" "}
+              <span className="chip-count">{categoryCount("all")}</span>
             </button>
             {categories.map((c) => (
               <button
@@ -805,6 +839,7 @@ export default function ProgressWorkspace() {
                 onClick={() => setCategory(c)}
               >
                 {c}
+                <span className="chip-count">{categoryCount(c)}</span>
               </button>
             ))}
           </div>
@@ -1059,11 +1094,21 @@ export default function ProgressWorkspace() {
             </div>
           )}
           <header className="drawer-top">
-            <span>
-              {selectedFile?.path === TODO
-                ? `To-do · ${selectedRow?.id || ""}`
-                : "Item details"}
-            </span>
+            <div className="drawer-context">
+              <span className="drawer-context-icon">
+                {selectedFile?.path === TODO ? (
+                  <CheckCheck size={16} />
+                ) : (
+                  <FolderHeart size={16} />
+                )}
+              </span>
+              <div>
+                <strong>
+                  {selectedFile?.path === TODO ? "To-do" : "Work item"}
+                </strong>
+                <span>{selectedRow?.id || ""}</span>
+              </div>
+            </div>
             <button
               className="icon-button"
               aria-label="Close details"

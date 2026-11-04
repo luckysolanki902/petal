@@ -1,9 +1,18 @@
-import CategoryBadge from "./category-badge";
+import SelectMenu from "./select-menu";
+import CustomFields from "./custom-fields";
+import {
+  DEFAULT_CONFIGURATION,
+  type ProjectConfiguration,
+} from "../lib/project-config";
 import { Check, Trash2 } from "lucide-react";
 import { DetailValue, dateLabel } from "./detail-value";
 import type { Row } from "../lib/model";
 type Props = {
   row: Row;
+  configuration?: ProjectConfiguration;
+  onFields: (fields: Record<string, unknown>) => void;
+  categories: string[];
+  onCategory: (value: string) => void;
   busy: boolean;
   deleted: boolean;
   dirty: boolean;
@@ -32,6 +41,10 @@ const core = new Set([
 ]);
 export default function TodoDetails({
   row,
+  configuration = DEFAULT_CONFIGURATION,
+  onFields,
+  categories,
+  onCategory,
   busy,
   deleted,
   dirty,
@@ -41,7 +54,10 @@ export default function TodoDetails({
   onDelete,
   onUndo,
 }: Props) {
-  const details = Object.entries(row).filter(([key]) => !core.has(key));
+  const details = Object.entries(row).filter(
+    ([key]) =>
+      !core.has(key) && !configuration.fields.some((f) => f.key === key),
+  );
   return (
     <div className="todo-panel">
       <div className="todo-panel-toolbar">
@@ -56,14 +72,35 @@ export default function TodoDetails({
           <span>{row.done && <Check size={14} />}</span>
           {row.done ? "Completed" : "Mark complete"}
         </button>
-        <CategoryBadge
-          category={String(row.category || row.section || "General")}
+        <SelectMenu
+          label="To-do category"
+          className="todo-category-picker"
+          value={String(row.category || row.section || "General")}
+          disabled={busy || deleted}
+          options={[
+            ...new Set([
+              String(row.category || row.section || "General"),
+              ...configuration.categories.map((c) => c.name),
+              ...categories,
+            ]),
+          ].map((name) => ({
+            value: name,
+            label: name,
+            color: configuration.categories.find((c) => c.name === name)?.color,
+          }))}
+          onChange={onCategory}
         />
       </div>
       <section className="todo-task-copy rich-text">
         <h2 className="sr-only">Task</h2>
         <DetailValue value={String(row.task || row.bug || row.id)} />
       </section>
+      <CustomFields
+        configuration={configuration}
+        row={row}
+        disabled={busy}
+        onChange={onFields}
+      />
       <section className="todo-notes">
         <label htmlFor="todo-note">Notes</label>
         <textarea
@@ -110,7 +147,10 @@ export default function TodoDetails({
           </summary>
           {details.map(([key, value]) => (
             <section className="detail-section" key={key}>
-              <h3>{key.replace(/([a-z])([A-Z])/g, "$1 $2")}</h3>
+              <h3>
+                {configuration.fieldLabels[key] ||
+                  key.replace(/([a-z])([A-Z])/g, "$1 $2")}
+              </h3>
               <div className="rich-text">
                 <DetailValue value={value} />
               </div>

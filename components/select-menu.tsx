@@ -1,7 +1,13 @@
 "use client";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronDown } from "lucide-react";
-type Option = { value: string; label: string; description?: string };
+type Option = {
+  value: string;
+  label: string;
+  description?: string;
+  color?: number;
+  stats?: { label: string; value: number | null }[];
+};
 type Props = {
   label: string;
   value: string;
@@ -153,6 +159,13 @@ export default function SelectMenu({
         onKeyDown={keyboard}
         onClick={() => (open ? close() : show())}
       >
+        {typeof options[selected]?.color === "number" && (
+          <i
+            className="select-color-dot"
+            style={{ background: `hsl(${options[selected].color} 55% 60%)` }}
+            aria-hidden="true"
+          />
+        )}
         <span>{options[selected]?.label || "Select…"}</span>
         <ChevronDown size={14} aria-hidden="true" />
       </button>
@@ -185,8 +198,26 @@ export default function SelectMenu({
             onClick={() => choose(index)}
           >
             <span className="select-option-copy">
-              <span>{option.label}</span>
+              <span className="select-option-label">
+                {typeof option.color === "number" && (
+                  <i
+                    className="select-color-dot"
+                    style={{ background: `hsl(${option.color} 55% 60%)` }}
+                    aria-hidden="true"
+                  />
+                )}
+                {option.label}
+              </span>
               {option.description && <small>{option.description}</small>}
+              {option.stats && (
+                <span className="select-option-stats">
+                  {option.stats.map((stat) => (
+                    <span key={stat.label}>
+                      <b>{stat.value ?? "—"}</b> {stat.label}
+                    </span>
+                  ))}
+                </span>
+              )}
             </span>
             <Check
               size={15}

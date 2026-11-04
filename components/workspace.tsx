@@ -16,6 +16,13 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import ProjectSettings from "./project-settings";
+import CustomFields from "./custom-fields";
+import {
+  DEFAULT_CONFIGURATION,
+  completeStatus,
+  type ProjectConfiguration,
+} from "../lib/project-config";
 import FileIcon from "./file-icon";
 import { StackIcon, ChartLineUpIcon } from "@phosphor-icons/react";
 import CategoryBadge, { categoryStyle } from "./category-badge";
@@ -23,7 +30,6 @@ import SelectMenu from "./select-menu";
 import TodoDetails from "./todo-details";
 import { DetailValue, dateLabel } from "./detail-value";
 import {
-  STATUSES,
   TODO,
   fileLabel,
   isComplete,
@@ -35,12 +41,6 @@ import {
 } from "../lib/model";
 type Drafts = Record<string, { revision: string; edits: Record<string, Edit> }>;
 type Selection = { file: string; id: string };
-const tones: Record<Status, string> = {
-  "To do": "todo",
-  Doing: "doing",
-  Waiting: "waiting",
-  Done: "done",
-};
 const labels: Record<string, string> = {
   rootCause: "Findings",
   howFixed: "What changed",
@@ -94,8 +94,16 @@ async function api<T>(
     );
   return result;
 }
-function ProgressMeter({ row, file }: { row: Row; file: string }) {
-  const done = isComplete(row, file);
+function ProgressMeter({
+  row,
+  file,
+  configuration = DEFAULT_CONFIGURATION,
+}: {
+  row: Row;
+  file: string;
+  configuration?: ProjectConfiguration;
+}) {
+  const done = isComplete(row, file, configuration);
   const percent = done
     ? 100
     : typeof row.progress === "number"
@@ -117,6 +125,9 @@ function ProgressMeter({ row, file }: { row: Row; file: string }) {
 }
 export default function ProgressWorkspace() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [settingsSection, setSettingsSection] = useState<"project" | "backup">(
+    "project",
+  );
   const [settingsOpen, setSettingsOpen] = useState(false),
     [storage, setStorage] = useState<{
       directory: string;
@@ -156,6 +167,7 @@ export default function ProgressWorkspace() {
     });
   }
   const [newTitle, setNewTitle] = useState("");
+  const [newCategory, setNewCategory] = useState("General");
   const [data, setData] = useState<Workspace | null>(null),
     [loadError, setLoadError] = useState("");
   const [mode, setMode] = useState<"progress" | "todo">("progress"),
@@ -200,11 +212,7 @@ export default function ProgressWorkspace() {
       if (p) {
         setMode(p.mode === "todo" ? "todo" : "progress");
         setScope(typeof p.scope === "string" ? p.scope : "all");
-        setFilter(
-          ["Active", "All", ...STATUSES].includes(p.filter)
-            ? p.filter
-            : "Active",
-        );
+        setFilter(typeof p.filter === "string" ? p.filter : "Active");
         setTodoFilter(
           ["To do", "Done", "All"].includes(p.todoFilter)
             ? p.todoFilter
@@ -278,25 +286,34 @@ export default function ProgressWorkspace() {
     if (confirm && !confirmRef.current?.open) confirmRef.current?.showModal();
     else if (!confirm) confirmRef.current?.close();
   }, [confirm]);
+  const configuration = data?.configuration || DEFAULT_CONFIGURATION;
+  const statuses = configuration.statuses.map((s) => s.name);
+  useEffect(() => {
+    if (
+      data &&
+      ![
+        "Active",
+        "All",
+        ...data.configuration.statuses.map((s) => s.name),
+      ].includes(filter)
+    )
+      setFilter("Active");
+  }, [data, filter]);
   const files = data?.files ?? [],
     progressFiles = files.filter((f) => f.path !== TODO),
     todoFile = files.find((f) => f.path === TODO);
-  const effective = (row: Row, file: string): Row => ({
-    ...row,
-    ...drafts[file]?.edits[row.id],
-  });
+  const effective = (row: Row, file: string): Row => {
+    const { fields, ...patch } = drafts[file]?.edits[row.id] || {};
+    return { ...row, ...patch, ...fields };
+  };
   const allProgress = progressFiles
     .filter((f) => !f.error)
     .flatMap((f) =>
       f.rows.map((row) => ({ file: f, row: effective(row, f.path) })),
     );
-  const counts = Object.fromEntries(
-    STATUSES.map((status) => [
-      status,
-      allProgress.filter((x) => x.row.status === status).length,
-    ]),
-  );
-  const activeCount = allProgress.length - (counts.Done || 0),
+  const activeCount = allProgress.filter(
+      ({ row }) => !completeStatus(row.status, configuration),
+    ).length,
     todoOpen = todoFile?.rows.filter((r) => !r.done).length || 0;
   const currentFiles =
     mode === "todo"
@@ -322,7 +339,7 @@ export default function ProgressWorkspace() {
     String(row.category || row.section || "Uncategorised");
   const matchesProgress = (row: Row, status: string) =>
     status === "All" ||
-    (status === "Active" && row.status !== "Done") ||
+    (status === "Active" && !completeStatus(row.status, configuration)) ||
     row.status === status;
   const matchesTodo = (row: Row, status: string) =>
     status === "All" || !!row.done === (status === "Done");
@@ -360,13 +377,11 @@ export default function ProgressWorkspace() {
           (sort === "newest" ? -1 : 1)
         );
       const order = (r: Row) =>
-        r.status === "Waiting"
-          ? 0
-          : r.status === "Doing"
-            ? 1
-            : r.status === "To do"
-              ? 2
-              : 3;
+        completeStatus(r.status, configuration)
+          ? statuses.length
+          : statuses.indexOf(r.status || "") < 0
+            ? statuses.length + 1
+            : statuses.length - 1 - statuses.indexOf(r.status || "");
       return order(a.row) - order(b.row);
     });
   const selectedFile = files.find((f) => f.path === selected?.file),
@@ -495,7 +510,7 @@ export default function ProgressWorkspace() {
   }
   const completed = items.filter(
     (x) =>
-      isComplete(x.row, x.file.path) &&
+      isComplete(x.row, x.file.path, configuration) &&
       !drafts[x.file.path]?.edits[x.row.id]?.delete,
   );
   async function confirmAction() {
@@ -522,7 +537,7 @@ export default function ProgressWorkspace() {
               : progressFiles[0]?.path;
         if (!file)
           throw new Error("No work collection. Run petal init to create one.");
-        await api("/__task", { file, title: newTitle, category: "General" });
+        await api("/__task", { file, title: newTitle, category: newCategory });
         setNewTitle("");
         setFilter("All");
         setTodoFilter("All");
@@ -610,10 +625,20 @@ export default function ProgressWorkspace() {
                   ? "Save or discard drafts before switching projects"
                   : "Switch project"
               }
-              options={(data?.projects || []).map((p) => ({
-                value: p.id,
-                label: p.name,
-              }))}
+              options={(data?.projects || []).map((p) => {
+                const summary = data?.projectSummaries?.find(
+                  (s) => s.id === p.id,
+                );
+                return {
+                  value: p.id,
+                  label: p.name,
+                  stats: [
+                    { label: "progress", value: summary?.progress ?? null },
+                    { label: "to-dos", value: summary?.todos ?? null },
+                  ],
+                  description: summary?.error,
+                };
+              })}
               onChange={(value) => {
                 window.location.href = "/?project=" + encodeURIComponent(value);
               }}
@@ -765,7 +790,7 @@ export default function ProgressWorkspace() {
                 {
                   value: "default",
                   label: "Needs attention first",
-                  description: "Waiting, then active work",
+                  description: "Later open stages first",
                 },
                 {
                   value: "newest",
@@ -796,7 +821,7 @@ export default function ProgressWorkspace() {
           >
             {(mode === "todo"
               ? ["To do", "Done", "All"]
-              : ["Active", "All", ...STATUSES]
+              : ["Active", "All", ...statuses]
             ).map((value) => (
               <button
                 key={value}
@@ -827,7 +852,7 @@ export default function ProgressWorkspace() {
               <button
                 key={c}
                 className="category-filter"
-                style={categoryStyle(c)}
+                style={categoryStyle(c, configuration.categories)}
                 aria-pressed={category === c}
                 onClick={() => setCategory(c)}
               >
@@ -945,10 +970,20 @@ export default function ProgressWorkspace() {
                       </td>
                       <td>
                         {mode === "todo" ? (
-                          <CategoryBadge category={categoryOf(row)} />
+                          <CategoryBadge
+                            category={categoryOf(row)}
+                            categories={configuration.categories}
+                          />
                         ) : (
                           <span
-                            className={`status-badge ${tones[row.status || "To do"]}`}
+                            className="status-badge configured-status"
+                            style={categoryStyle(
+                              row.status || "",
+                              configuration.statuses.map((s) => ({
+                                name: s.name,
+                                color: s.color,
+                              })),
+                            )}
                           >
                             <i />
                             {row.status}
@@ -956,7 +991,11 @@ export default function ProgressWorkspace() {
                         )}
                       </td>
                       <td>
-                        <ProgressMeter row={row} file={file.path} />
+                        <ProgressMeter
+                          row={row}
+                          file={file.path}
+                          configuration={configuration}
+                        />
                       </td>
                       <td className="row-date">
                         {dateLabel(row.createdAt, false)}
@@ -1116,6 +1155,26 @@ export default function ProgressWorkspace() {
             selectedFile.path === TODO ? (
               <TodoDetails
                 row={selectedRow}
+                configuration={configuration}
+                categories={[
+                  ...new Set(
+                    (todoFile?.rows || []).map((r) =>
+                      String(r.category || r.section || "General"),
+                    ),
+                  ),
+                ]}
+                onCategory={(category) =>
+                  stage(selectedFile, selectedRow.id, { category })
+                }
+                onFields={(fields) =>
+                  stage(selectedFile, selectedRow.id, {
+                    fields: {
+                      ...drafts[selectedFile.path]?.edits[selectedRow.id]
+                        ?.fields,
+                      ...fields,
+                    },
+                  })
+                }
                 busy={busy}
                 deleted={
                   !!drafts[selectedFile.path]?.edits[selectedRow.id]?.delete
@@ -1156,7 +1215,7 @@ export default function ProgressWorkspace() {
                         label="Status"
                         value={selectedRow.status || "To do"}
                         disabled={busy}
-                        options={STATUSES.map((status) => ({
+                        options={statuses.map((status) => ({
                           value: status,
                           label: status,
                         }))}
@@ -1172,7 +1231,11 @@ export default function ProgressWorkspace() {
                     <label>
                       Progress <span>updated by AI</span>
                     </label>
-                    <ProgressMeter row={selectedRow} file={selectedFile.path} />
+                    <ProgressMeter
+                      row={selectedRow}
+                      file={selectedFile.path}
+                      configuration={configuration}
+                    />
                   </div>
                 </div>
                 {selectedFile.path === TODO && (
@@ -1223,6 +1286,20 @@ export default function ProgressWorkspace() {
                     </strong>
                   </span>
                 </div>
+                <CustomFields
+                  configuration={configuration}
+                  row={selectedRow}
+                  disabled={busy}
+                  onChange={(fields) =>
+                    stage(selectedFile, selectedRow.id, {
+                      fields: {
+                        ...drafts[selectedFile.path]?.edits[selectedRow.id]
+                          ?.fields,
+                        ...fields,
+                      },
+                    })
+                  }
+                />
                 <section className="detail-section note-section">
                   <label htmlFor="row-comment">Notes</label>
                   <textarea
@@ -1246,6 +1323,7 @@ export default function ProgressWorkspace() {
                 {Object.entries(selectedRow)
                   .filter(
                     ([key]) =>
+                      !configuration.fields.some((f) => f.key === key) &&
                       ![
                         "id",
                         "task",
@@ -1267,7 +1345,9 @@ export default function ProgressWorkspace() {
                   .map(([key, value]) => (
                     <section className="detail-section" key={key}>
                       <h3>
-                        {labels[key] || key.replace(/([a-z])([A-Z])/g, "$1 $2")}
+                        {configuration.fieldLabels[key] ||
+                          labels[key] ||
+                          key.replace(/([a-z])([A-Z])/g, "$1 $2")}
                       </h3>
                       <div className="rich-text">
                         <DetailValue value={value} />
@@ -1328,55 +1408,124 @@ export default function ProgressWorkspace() {
           </button>
         </header>
         <div className="settings-body">
-          <h2>Data repository</h2>
-          <p>All projects share one local Git repository.</p>
-          <code className="storage-path">{storage?.directory}</code>
-          <label htmlFor="storage-origin">
-            Git origin <span>Optional</span>
-          </label>
-          <input
-            id="storage-origin"
-            value={origin}
-            onChange={(e) => setOrigin(e.target.value)}
-            placeholder="git@github.com:you/petal-data.git"
-            disabled={busy}
-          />
-          <p>
-            Leave empty to keep checkpoints local. Connecting an origin enables
-            pushing all project data when you create a checkpoint. Use a private
-            repository for private work.
-          </p>
-          {actionError && (
-            <div className="notice error" role="alert">
-              {actionError}
-            </div>
-          )}
-          <div className="settings-actions">
-            <button className="button" onClick={() => setSettingsOpen(false)}>
-              Cancel
+          <nav className="settings-sections" aria-label="Settings sections">
+            <button
+              aria-pressed={settingsSection === "project"}
+              onClick={() => setSettingsSection("project")}
+            >
+              Project
             </button>
             <button
-              className="button primary"
-              disabled={busy || !storage}
-              onClick={() =>
-                void run(async () => {
-                  const result = await api<{
-                    directory: string;
-                    origin: string;
-                  }>("/api/settings", { origin });
-                  setStorage(result);
-                  setSettingsOpen(false);
-                  setMessage(
-                    result.origin
-                      ? "Origin connected. Checkpoints will commit and push."
-                      : "Local only. Checkpoints will not push.",
-                  );
-                })
-              }
+              aria-pressed={settingsSection === "backup"}
+              onClick={() => setSettingsSection("backup")}
             >
-              Save settings
+              Git backup
             </button>
-          </div>
+          </nav>
+          {settingsOpen && data && (
+            <section hidden={settingsSection !== "project"}>
+              <ProjectSettings
+                project={data.project.id}
+                workspaceName={data.project.name}
+                workspaces={data.projects}
+                disabled={dirtyCount > 0 || busy}
+                categories={[
+                  ...new Set(
+                    (todoFile?.rows || []).map((r) =>
+                      String(r.category || r.section || "Uncategorised"),
+                    ),
+                  ),
+                ]}
+                statusUsage={Object.fromEntries(
+                  configuration.statuses.map((s) => [
+                    s.name,
+                    allProgress.filter(({ row }) => row.status === s.name)
+                      .length,
+                  ]),
+                )}
+                fieldKeys={[
+                  ...new Set(
+                    files.flatMap((f) =>
+                      f.rows.flatMap((row) =>
+                        Object.keys(row).filter(
+                          (key) =>
+                            ![
+                              "id",
+                              "task",
+                              "bug",
+                              "status",
+                              "statusAt",
+                              "createdAt",
+                              "done",
+                              "doneAt",
+                              "comments",
+                              "progress",
+                              "est",
+                              "difficulty",
+                              "category",
+                              "section",
+                            ].includes(key),
+                        ),
+                      ),
+                    ),
+                  ),
+                ]}
+                request={api}
+                onApplied={refresh}
+              />
+            </section>
+          )}
+          <section hidden={settingsSection !== "backup"}>
+            <h2>Data repository</h2>
+            <p>All projects share one local Git repository.</p>
+            <code className="storage-path">{storage?.directory}</code>
+            <label htmlFor="storage-origin">
+              Git origin <span>Optional</span>
+            </label>
+            <input
+              id="storage-origin"
+              value={origin}
+              onChange={(e) => setOrigin(e.target.value)}
+              placeholder="git@github.com:you/petal-data.git"
+              disabled={busy}
+            />
+            <p>
+              Leave empty to keep checkpoints local. Connecting an origin
+              enables pushing all project data when you create a checkpoint. Use
+              a private repository for private work.
+            </p>
+            {actionError && (
+              <div className="notice error" role="alert">
+                {actionError}
+              </div>
+            )}
+            <div className="settings-actions">
+              <button className="button" onClick={() => setSettingsOpen(false)}>
+                Cancel
+              </button>
+              <button
+                className="button primary"
+                disabled={busy || !storage}
+                onClick={() =>
+                  void run(async () => {
+                    const result = await api<{
+                      directory: string;
+                      origin: string;
+                    }>("/api/settings", { origin });
+                    setStorage(result);
+                    setSettingsOpen(false);
+                    setMessage(
+                      result.origin
+                        ? "Origin connected. Checkpoints will commit and push."
+                        : "Local only. Checkpoints will not push.",
+                    );
+                  })
+                }
+              >
+                Save settings
+              </button>
+            </div>
+          </section>
         </div>
       </dialog>
       <dialog
@@ -1407,14 +1556,37 @@ export default function ProgressWorkspace() {
                   : `Mark ${completed.length} completed items ${mode === "progress" && scope === "all" ? "across all progress files" : "in this file"} for deletion, including items hidden by filters. You can undo before saving.`}
         </p>
         {confirm === "add" && (
-          <input
-            className="new-item-input"
-            aria-label="New item title"
-            placeholder="Item title"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            maxLength={2000}
-          />
+          <>
+            <input
+              className="new-item-input"
+              aria-label="New item title"
+              placeholder="Item title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              maxLength={2000}
+            />
+            {mode === "todo" && (
+              <SelectMenu
+                label="New to-do category"
+                value={newCategory}
+                options={[
+                  ...new Set([
+                    "General",
+                    ...configuration.categories.map((c) => c.name),
+                    ...(todoFile?.rows || []).map((r) =>
+                      String(r.category || r.section || "General"),
+                    ),
+                  ]),
+                ].map((name) => ({
+                  value: name,
+                  label: name,
+                  color: configuration.categories.find((c) => c.name === name)
+                    ?.color,
+                }))}
+                onChange={setNewCategory}
+              />
+            )}
+          </>
         )}
         {confirm === "save" && (
           <ul className="deletion-summary">

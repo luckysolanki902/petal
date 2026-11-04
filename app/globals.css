@@ -2617,3 +2617,56 @@ textarea {
     padding: 13px 18px;
   }
 }
+
+/* Stable category colors shared by table badges, filters, and details. */
+.category-badge,
+.category-chips button.category-filter {
+  --category-ink: hsl(var(--category-hue) 42% 31%);
+  --category-fill: hsl(var(--category-hue) 50% 94%);
+  --category-border: hsl(var(--category-hue) 33% 83%);
+  color: var(--category-ink);
+  background: var(--category-fill);
+  border: 1px solid var(--category-border);
+}
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.category-badge i {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.8;
+}
+.category-chips button.category-filter .chip-count {
+  color: inherit;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.category-chips button.category-filter:hover {
+  border-color: var(--category-ink);
+}
+.category-chips button.category-filter[aria-pressed="true"] {
+  color: var(--category-ink);
+  background: var(--category-fill);
+  border-color: var(--category-ink);
+  box-shadow: inset 0 0 0 1px var(--category-ink);
+}
+:root[data-theme="dark"] .category-badge,
+:root[data-theme="dark"] .category-chips button.category-filter {
+  --category-ink: hsl(var(--category-hue) 54% 76%);
+  --category-fill: hsl(var(--category-hue) 24% 16%);
+  --category-border: hsl(var(--category-hue) 25% 29%);
+}
+.work-table .row-date {
+  min-width: 106px;
+  white-space: nowrap;
+}

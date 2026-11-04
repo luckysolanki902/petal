@@ -1,3 +1,4 @@
+import CategoryBadge from "./category-badge";
 import { Check, Trash2 } from "lucide-react";
 import { DetailValue, dateLabel } from "./detail-value";
 import type { Row } from "../lib/model";
@@ -55,9 +56,9 @@ export default function TodoDetails({
           <span>{row.done && <Check size={14} />}</span>
           {row.done ? "Completed" : "Mark complete"}
         </button>
-        <span className="todo-panel-category">
-          {String(row.category || row.section || "General")}
-        </span>
+        <CategoryBadge
+          category={String(row.category || row.section || "General")}
+        />
       </div>
       <section className="todo-task-copy rich-text">
         <h2 className="sr-only">Task</h2>

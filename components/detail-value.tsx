@@ -31,7 +31,7 @@ export function DetailValue({ value }: { value: unknown }) {
     <span>{"{}"}</span>
   );
 }
-export function dateLabel(value: unknown) {
+export function dateLabel(value: unknown, includeTime = true) {
   if (
     typeof value !== "string" ||
     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
@@ -40,15 +40,13 @@ export function dateLabel(value: unknown) {
     !Number.isFinite(Date.parse(value))
   )
     return "Unknown";
-  return (
-    new Intl.DateTimeFormat("en-IN", {
-      timeZone: "Asia/Kolkata",
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    }).format(new Date(value)) + " IST"
-  );
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    ...(includeTime
+      ? { hour: "numeric" as const, minute: "2-digit" as const, hour12: true }
+      : {}),
+  }).format(new Date(value));
 }

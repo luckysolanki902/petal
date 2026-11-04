@@ -16,6 +16,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import CategoryBadge, { categoryStyle } from "./category-badge";
 import SelectMenu from "./select-menu";
 import TodoDetails from "./todo-details";
 import { DetailValue, dateLabel } from "./detail-value";
@@ -835,6 +836,8 @@ export default function ProgressWorkspace() {
             {categories.map((c) => (
               <button
                 key={c}
+                className="category-filter"
+                style={categoryStyle(c)}
                 aria-pressed={category === c}
                 onClick={() => setCategory(c)}
               >
@@ -952,7 +955,7 @@ export default function ProgressWorkspace() {
                       </td>
                       <td>
                         {mode === "todo" ? (
-                          String(row.category || row.section || "—")
+                          <CategoryBadge category={categoryOf(row)} />
                         ) : (
                           <span
                             className={`status-badge ${tones[row.status || "To do"]}`}
@@ -965,7 +968,9 @@ export default function ProgressWorkspace() {
                       <td>
                         <ProgressMeter row={row} file={file.path} />
                       </td>
-                      <td className="row-date">{dateLabel(row.createdAt)}</td>
+                      <td className="row-date">
+                        {dateLabel(row.createdAt, false)}
+                      </td>
                       <td className="row-notes">
                         {row.comments || <span className="muted">—</span>}
                       </td>

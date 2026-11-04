@@ -13,30 +13,95 @@ Petal gives coding agents and people a shared project dashboard backed by JSON f
 
 [Source](https://github.com/luckysolanki902/petal) · [Issues](https://github.com/luckysolanki902/petal/issues) · [MIT license](LICENSE)
 
-## Run from source
+## Start here
 
-Requires Node.js 22 or newer, npm, and Git for checkpoints.
+**One installation. A workspace for each project. A shared dashboard for you and your agents.**
+
+[Install](#install-globally) · [Add a workspace](#add-a-workspace) · [Connect agents](#how-claude-code-and-codex-find-petal) · [CLI reference](#cli) · [Git backup](#global-git-backup) · [Development](#development)
+
+## Install globally
+
+Requires **Node.js 22+**, npm, and Git. No model API key or Petal account is needed.
 
 ```sh
+# 1. Get the public application source
 git clone https://github.com/luckysolanki902/petal.git
 cd petal
+
+# 2. Install dependencies and build the app
 npm ci
 npm run build
+
+# 3. Make the petal command available from any directory
 npm link
+
+# 4. Install skills for your local coding agents
 petal setup
-cd /path/to/your/project
-petal init
-petal
 ```
 
-`petal init` creates a tracker under `~/.config/petal/data/projects/` and registers the project locally. It adds a small managed section to the source project’s `AGENTS.md` and `CLAUDE.md`, preserving existing instructions. This lets agents discover tracking from the source directory. Use `--no-agent-files` to skip this. Repeat it in another project; the dashboard's project selector switches between them. `petal` starts or reuses a background server at `http://localhost:8766` and opens your browser.
+`npm link` connects the global command to this checkout. Keep the checkout in place. If `petal` is not found, check that npm’s global executable directory is on your shell’s `PATH`, then open a new terminal. To update this installation, pull the latest app source, run `npm ci && npm run build`, then run `petal setup` to refresh managed skills.
 
-The npm package name is `petal-workspace`; it is **not yet published to npm**. Use the source instructions above or create a local installable tarball:
+Prefer an installable package instead of a linked checkout? Build and pack it:
 
 ```sh
 npm pack
 npm install -g ./petal-workspace-0.1.0.tgz
+petal setup
 ```
+
+The package name is `petal-workspace`; it is **not published to the npm registry yet**. Use the source or local tarball instructions above. A global install installs the command for your OS user, not every account on the machine.
+
+## Add a workspace
+
+### From the dashboard
+
+Run `petal`, choose **Add workspace**, and enter a name and the full path to an existing source project folder. On a fresh installation, use **Add your first workspace**.
+
+The setup form lets you choose whether to install global agent skills and connect the project’s instruction files. It explains both before writing anything. Adding a workspace never pushes data.
+
+### From your terminal
+
+```sh
+cd /path/to/your/project
+petal init --name "My project"
+petal doctor
+petal
+```
+
+Or name a source folder directly:
+
+```sh
+petal init /path/to/another/project --name "Another project"
+```
+
+Repeat for each project. Workspaces have independent tasks, categories, statuses, and fields. Switch between them in the dashboard. `petal init` creates the tracker in `~/.config/petal/data/projects/`, registers its source root, and adds a small managed section to `AGENTS.md` and `CLAUDE.md` in that source root. Existing instructions and tasks are preserved. Use `--no-agent-files` to skip those instruction files.
+
+Re-running `init` is safe: it reconnects missing instruction sections without replacing tracker data. Workspace IDs and source paths are local to your machine; the project instruction block contains portable commands instead of a hard-coded machine ID. Each developer registers their own checkout.
+
+`petal` starts or reuses a background server at `http://localhost:8766` and opens the browser. It keeps running after the terminal command finishes; stop it with `petal stop`.
+
+## How Claude Code and Codex find Petal
+
+| Piece             | What it does                                                              | Scope                                         |
+| ----------------- | ------------------------------------------------------------------------- | --------------------------------------------- |
+| `petal setup`     | Installs the bundled `petal` skill                                        | Your OS user, across projects                 |
+| `petal init`      | Connects `AGENTS.md` and `CLAUDE.md` to tracking                          | The selected source project                   |
+| `petal task list` | Resolves the nearest registered source root and reads tasks/configuration | Current workspace                             |
+| `petal doctor`    | Reports the current workspace and project instruction connection          | Current directory, or explicit `--project ID` |
+
+The installed skill tells the agent to use the matching workspace automatically for substantial project work. **If there is no matching workspace, it asks “Create a Petal workspace for this project? Yes / No”, naming the folder first.** Yes creates it; No continues your work without tracking there. Errors such as a missing CLI or broken registry are reported, never mistaken for permission to create a replacement. An explicit request to set up that project already counts as consent.
+
+Restart existing agent sessions after setup. In Claude Code you can explicitly invoke `/petal`; in Codex ask it to use the Petal skill. Skills guide model behavior; they are not a background watcher or a guarantee that every model will invoke them. Project instructions reinforce the connection in future sessions.
+
+These discovery locations follow the official documentation for [Codex skills](https://developers.openai.com/codex/skills), [Claude Code skills](https://code.claude.com/docs/en/skills), and [OpenCode skills](https://opencode.ai/docs/skills/):
+
+| Agent       | Default user skill directory                                        |
+| ----------- | ------------------------------------------------------------------- |
+| Codex       | `~/.agents/skills/petal/`                                           |
+| Claude Code | `~/.claude/skills/petal/` (`CLAUDE_CONFIG_DIR` is respected)        |
+| OpenCode    | `~/.config/opencode/skills/petal/` (`XDG_CONFIG_HOME` is respected) |
+
+Existing unmanaged skills are preserved. Setup does not create a workspace for the Petal app itself. Cloud-only chats do not gain local filesystem access through a skill install; use a local-capable agent or a separately configured local connection.
 
 ## Task tracking
 
@@ -77,19 +142,37 @@ Configuration lives in `project-settings.json` beside the project's `data/` dire
 
 ## CLI
 
+| Command                                           | Purpose                                                                      |
+| ------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `petal`                                           | Start/reuse the dashboard and open it                                        |
+| `petal --no-open --port 9000`                     | Run locally on a chosen port without opening a browser                       |
+| `petal setup`                                     | Install or refresh managed skills for all supported agents                   |
+| `petal skills install --agent codex`              | Install only the Codex skill (`claude`, `opencode`, or `all` also supported) |
+| `petal init [PATH] --name "Project"`              | Register a source project and connect project instructions                   |
+| `petal init [PATH] --no-agent-files`              | Register without editing project instruction files                           |
+| `petal register PATH --data DIR --name "Project"` | Import an existing valid tracker directory                                   |
+| `petal projects`                                  | List registered workspaces, IDs, and data locations as JSON                  |
+| `petal doctor [--project ID]`                     | Check workspace and agent instruction wiring                                 |
+| `petal status` / `petal stop`                     | Inspect or stop the verified local server                                    |
+| `petal task list [--project ID]`                  | Read tasks, file revisions, and workspace configuration as JSON              |
+| `petal --help`                                    | Show command help                                                            |
+
+Task commands select the nearest registered source root from the working directory. Outside a registered project they fail safely; use an exact workspace ID from `petal projects` to select one explicitly. Dashboard launch can be global. A mistyped explicit project selector is an error.
+
+### Add progress work or a to-do
+
 ```sh
-petal --no-open --port 9000
-petal status
-petal stop
-petal projects
-petal register /path/to/project --data /path/to/project/progress --name "My project"
-petal task list --project PROJECT_ID
-petal task add --title "Verify the new onboarding" --todo --project PROJECT_ID
-petal task update ITEM_ID --project PROJECT_ID --file data/feature.work.json \
-  --input /tmp/petal-patch.json --revision REVISION_FROM_TASK_LIST
+cd /path/to/your/project
+petal task add --title "Implement search" --file data/feature.work.json
+petal task add --title "Review search behavior" --todo --category "Review"
+petal task list
 ```
 
-A patch contains only changed fields, for example:
+To work from any directory, add `--project PROJECT_ID`. Existing workspaces may use different progress filenames: use the paths returned by `task list`.
+
+### Update an item without overwriting newer evidence
+
+Read `petal task list --project PROJECT_ID`, then save a JSON patch containing only fields you want to change:
 
 ```json
 {
@@ -99,33 +182,37 @@ A patch contains only changed fields, for example:
 }
 ```
 
-IDs and creation dates are immutable. The CLI sets status/completion timestamps. Invalid or stale edits leave the saved file untouched. Legacy trackers must be migrated to the current schema before registration; registration never silently rewrites them.
-
-## Global installation and adding workspaces
-
-After the global `npm link` or tarball install above, run `petal setup` once per user. This installs the bundled skills without creating a workspace. In every source project you want to track, run:
-
 ```sh
-cd /path/to/project
-petal init --name "My workspace"
-petal doctor
-petal
+petal task update ITEM_ID --project PROJECT_ID \
+  --file data/feature.work.json --input /path/to/patch.json \
+  --revision REVISION_FROM_TASK_LIST
 ```
 
-Repeat for another project. Each workspace has its own workflow, categories, and fields; **Settings → Global Git backup** applies to all workspaces. The CLI selects the nearest registered source root. Task commands outside registered projects fail instead of silently editing another workspace; use `--project ID` when explicit selection is needed. Re-running `init` connects missing agent instruction files without replacing tasks.
+Use the workspace’s actual status names and custom field types from `configuration`, not assumptions from another project. IDs and creation dates are immutable. The CLI manages lifecycle timestamps. A stale revision rejects the update: reread and reconcile before retrying. Legacy tracker registration validates existing data and never silently rewrites it.
 
-Skills provide reusable tracking instructions; project instruction files tell the agent to use them here. Discovery follows [Codex skills](https://developers.openai.com/codex/skills), [Claude Code skills](https://code.claude.com/docs/en/skills), and [OpenCode skills](https://opencode.ai/docs/skills/). Restart existing agent sessions after installing skills. Installation does not guarantee every model automatically invokes a skill; the project instructions and explicit `petal` invocation provide a direct path.
+## Global Git backup
 
-## Agent skills
+Open **Settings → Global Git backup**. Its origin and shared data directory apply to **every workspace on this machine**, while workflow settings remain per workspace.
 
-```sh
-petal skills install
-petal skills install --agent codex
-```
+1. Create an empty **private** Git repository with your Git provider.
+2. Enter its SSH or HTTPS URL as the Git origin and save global settings.
+3. Click **Checkpoint**, review its all-workspaces scope, and confirm.
 
-Installs the bundled `petal` skill into the current user's Claude Code, Codex, and OpenCode skill directories. Existing unmanaged skills are not overwritten. Restart or refresh the agent session to discover it. The skill teaches agents to preserve evidence, use revision-checked patches, and update percentages honestly.
+Saving the origin never publishes by itself. A checkpoint validates trackers, commits local changes, and pushes when an origin is connected. Without an origin, checkpoints stay local. Your existing Git credentials handle authentication; do not put passwords in repository URLs. No background push, force-push, or automatic pull occurs. Push failures preserve the local commit and report the failure so you can resolve it and retry.
 
-Cloud-only ChatGPT or Claude chats do not gain access to your local machine through a skill install. Use a local-capable agent or an explicitly configured local connection. No remote connector, credentials, or broad tool permissions are installed.
+The data repository is separate from this public application repository. Never attach a private tracker-data origin to the app source repository or commit real task evidence into the app. Disconnect the data origin in global settings to return to local-only checkpoints.
+
+## Troubleshooting
+
+| Symptom                    | What to check                                                                                                     |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Agent cannot find Petal    | Run `petal setup`, restart the agent, then run `petal doctor` from the source project                             |
+| No matching workspace      | Run `petal projects`; initialize the correct source root or pass `--project ID`                                   |
+| Instructions still missing | Re-run `petal init` in that source root; symlinked or malformed instruction blocks are reported for manual repair |
+| Source checkout not built  | Run `npm ci` and `npm run build` in the Petal app checkout                                                        |
+| Dashboard unavailable      | Run `petal status`; check the log at `~/.config/petal/server.log`; try an unused `--port`                         |
+| Revision conflict          | Read the current item and merge your patch with the new evidence                                                  |
+| Private Git push fails     | Check the data repository’s origin and your Git authentication; the local checkpoint is retained                  |
 
 ## Files & architecture
 

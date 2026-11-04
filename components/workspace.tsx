@@ -29,6 +29,8 @@ import CategoryBadge, { categoryStyle } from "./category-badge";
 import SelectMenu from "./select-menu";
 import AddWorkspace from "./add-workspace";
 import TodoDetails from "./todo-details";
+import Notifications from "./notifications";
+import { noticeURL, type Notice } from "../lib/notifications";
 import SidebarDelete from "./sidebar-delete";
 import { afterSidebarDelete, type Drafts } from "../lib/drafts";
 import { DetailValue, dateLabel } from "./detail-value";
@@ -288,6 +290,66 @@ export default function ProgressWorkspace() {
     if (confirm && !confirmRef.current?.open) confirmRef.current?.showModal();
     else if (!confirm) confirmRef.current?.close();
   }, [confirm]);
+  const [highlight, setHighlight] = useState<{
+    file: string;
+    id: string;
+  } | null>(null);
+  const handledNotice = useRef("");
+  function revealRow(file: string, id: string) {
+    if (
+      !data?.files.find((f) => f.path === file)?.rows.some((r) => r.id === id)
+    ) {
+      setMessage(
+        "This notification’s item is no longer available. It may have been deleted.",
+      );
+      return;
+    }
+    setSelected(null);
+    setMode(file === TODO ? "todo" : "progress");
+    setScope(file === TODO ? "all" : file);
+    setFilter("All");
+    setTodoFilter("All");
+    setCategory("all");
+    setHighlight({ file, id });
+  }
+  function openNotice(n: Notice) {
+    if (n.project !== data?.project.id) {
+      window.location.href = noticeURL(n);
+      return;
+    }
+    revealRow(n.file, n.row);
+  }
+  useEffect(() => {
+    if (!ready || !data) return;
+    const params = new URLSearchParams(window.location.search),
+      file = params.get("file"),
+      row = params.get("row");
+    const key = params.get("notice") || `${file}:${row}`;
+    if (file && row && handledNotice.current !== key) {
+      handledNotice.current = key;
+      revealRow(file, row);
+    }
+  }, [ready, data]);
+  useEffect(() => {
+    if (!highlight) return;
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById(
+        `petal-row-${encodeURIComponent(highlight.file)}-${encodeURIComponent(highlight.id)}`,
+      );
+      el?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "instant"
+          : "smooth",
+        block: "center",
+      });
+      el?.focus({ preventScroll: true });
+    }, 100);
+    const end = window.setTimeout(() => setHighlight(null), 5000);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(end);
+    };
+  }, [highlight]);
   const configuration = data?.configuration || DEFAULT_CONFIGURATION;
   const statuses = configuration.statuses.map((s) => s.name);
   useEffect(() => {
@@ -653,6 +715,12 @@ export default function ProgressWorkspace() {
           >
             <Settings size={18} />
           </button>
+          <Notifications
+            project={data?.project.id || ""}
+            workspaces={data?.projects || []}
+            theme={theme}
+            onOpen={openNotice}
+          />
           <div className="project-control">
             <span>WORKSPACE</span>
             <SelectMenu
@@ -982,7 +1050,9 @@ export default function ProgressWorkspace() {
                   return (
                     <tr
                       key={`${file.path}:${row.id}`}
-                      className={deleted ? "is-deleting" : ""}
+                      id={`petal-row-${encodeURIComponent(file.path)}-${encodeURIComponent(row.id)}`}
+                      tabIndex={-1}
+                      className={`${deleted ? "is-deleting" : ""} ${highlight?.file === file.path && highlight.id === row.id ? "notification-highlight" : ""}`}
                     >
                       {mode === "todo" && (
                         <td>

@@ -62,6 +62,19 @@ try {
       `Installed package API failed (${response.status}): ${await response.text()}`,
     );
   const data = await response.json();
+  const activityResponse = await fetch(`http://127.0.0.1:${port}/api/activity`);
+  if (!activityResponse.ok)
+    throw new Error(
+      `Installed package activity failed: ${activityResponse.status}`,
+    );
+  const activity = await activityResponse.json();
+  if (
+    !Array.isArray(activity.rows) ||
+    activity.projects.length !== 1 ||
+    activity.unavailable.length
+  )
+    throw new Error("Installed package activity returned invalid state.");
+
   const extraProject = path.join(root, "extra-project");
   await fs.mkdir(extraProject);
   const added = await fetch(`http://127.0.0.1:${port}/api/workspaces`, {

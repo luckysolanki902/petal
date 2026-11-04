@@ -1,3 +1,4 @@
+import { workspaceSounds } from "../lib/notification-sounds";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -117,4 +118,16 @@ test("late snapshots cannot replay a newer transition or resurrect cleared histo
     ).state.notices.length,
     0,
   );
+});
+
+test("new workspace sounds use an available profile without changing existing choices", () => {
+  assert.deepEqual(workspaceSounds(["a", "b", "c"], { a: 2, b: 0 }), {
+    a: 2,
+    b: 0,
+    c: 1,
+  });
+  assert.deepEqual(workspaceSounds(["a", "b"], {}), { a: 0, b: 1 });
+  const all = workspaceSounds(["a", "b", "c", "d", "e", "f", "g"], {});
+  assert.equal(Object.keys(all).length, 7);
+  assert.equal(new Set(Object.values(all)).size, 6);
 });

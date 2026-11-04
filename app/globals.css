@@ -1574,7 +1574,7 @@ textarea::placeholder {
   padding: 22px 20px;
   height: 92px;
   border-top: 1px solid #e7e6da;
-  vertical-align: top;
+  vertical-align: middle;
 }
 .work-table tbody tr:nth-child(even) {
   background: #f9f7ef;
@@ -2683,4 +2683,21 @@ textarea {
   .item-title {
     min-width: 300px;
   }
+}
+
+.file-chip .tracker-icon {
+  flex: none;
+  color: var(--rose);
+}
+.file-chip:nth-child(3n) .tracker-icon {
+  color: #738caa;
+}
+.file-chip:nth-child(3n + 1) .tracker-icon {
+  color: #8c7eae;
+}
+:root[data-theme="dark"] .file-chip:nth-child(3n) .tracker-icon {
+  color: #adc4df;
+}
+:root[data-theme="dark"] .file-chip:nth-child(3n + 1) .tracker-icon {
+  color: #c6b5e5;
 }

@@ -16,6 +16,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import FileIcon from "./file-icon";
+import { StackIcon, ChartLineUpIcon } from "@phosphor-icons/react";
 import CategoryBadge, { categoryStyle } from "./category-badge";
 import SelectMenu from "./select-menu";
 import TodoDetails from "./todo-details";
@@ -91,18 +93,6 @@ async function api<T>(
         .join(" · "),
     );
   return result;
-}
-function FileIcon({ icon }: { icon: string }) {
-  return (
-    <img
-      src={icon.startsWith("https://") ? icon : `/${icon}`}
-      alt=""
-      onError={(event) => {
-        event.currentTarget.onerror = null;
-        event.currentTarget.src = "/icons/file.svg";
-      }}
-    />
-  );
 }
 function ProgressMeter({ row, file }: { row: Row; file: string }) {
   const done = isComplete(row, file);
@@ -652,7 +642,7 @@ export default function ProgressWorkspace() {
             setSelected(null);
           }}
         >
-          <FolderHeart size={16} />
+          <ChartLineUpIcon size={18} weight="duotone" />
           Progress<span>{activeCount}</span>
         </button>
         <button
@@ -705,7 +695,7 @@ export default function ProgressWorkspace() {
                 onClick={() => setScope("all")}
                 aria-pressed={scope === "all"}
               >
-                <FolderHeart size={17} />
+                <StackIcon size={19} weight="duotone" />
                 All work{" "}
                 <span className="chip-count">
                   {
@@ -724,7 +714,7 @@ export default function ProgressWorkspace() {
                   aria-pressed={scope === file.path}
                   title={file.path}
                 >
-                  <FileIcon icon={file.icon} />
+                  <FileIcon icon={file.icon} file={file.path} />
                   {!file.error && (
                     <span className="chip-count">{fileCount(file)}</span>
                   )}

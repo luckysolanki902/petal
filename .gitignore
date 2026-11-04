@@ -5,3 +5,7 @@ next-env.d.ts
 *.tgz
 .DS_Store
 .petal/
+
+.env*
+!.env.example
+*.log

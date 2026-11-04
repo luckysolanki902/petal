@@ -4,14 +4,16 @@
   "private": false,
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 8766",
-    "build": "node build-validator.cjs && next build && esbuild lib/store.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/store.mjs && esbuild lib/vault.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/vault.mjs",
+    "build": "node build-validator.cjs && next build && node scripts/prepare-package.mjs && esbuild lib/store.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/store.mjs && esbuild lib/vault.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/vault.mjs",
     "start": "next start --hostname 127.0.0.1 --port 8766",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "validate": "node validate.cjs",
     "format": "prettier --write",
     "build:validator": "node build-validator.cjs",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "verify:package": "node scripts/verify-package.mjs",
+    "smoke:package": "node scripts/smoke-package.mjs"
   },
   "engines": {
     "node": ">=22.0.0"
@@ -35,7 +37,7 @@
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
-  "description": "A calm, local-first project workspace for you and your coding agents.",
+  "description": "Local-first task and progress tracker for Claude Code, OpenAI Codex, and OpenCode. Multi-project dashboard, agent skills, JSON storage, and optional Git sync.",
   "bin": {
     "petal": "bin/petal.mjs"
   },
@@ -51,8 +53,47 @@
     "tracker.schema.json",
     "tracker-validator.js",
     "next.config.ts",
-    ".next",
+    ".next/server",
+    ".next/static",
+    ".next/BUILD_ID",
+    ".next/routes-manifest.json",
+    ".next/prerender-manifest.json",
+    ".next/build-manifest.json",
+    ".next/app-build-manifest.json",
+    ".next/required-server-files.json",
+    ".next/package.json",
     "README.md",
-    "LICENSE"
-  ]
+    "LICENSE",
+    "scripts/verify-package.mjs",
+    ".next/app-path-routes-manifest.json",
+    ".next/images-manifest.json",
+    ".next/fallback-build-manifest.json",
+    ".next/export-marker.json",
+    ".next/required-server-files.js",
+    "scripts/prepare-package.mjs",
+    "scripts/smoke-package.mjs",
+    "scripts/npm-command.mjs"
+  ],
+  "keywords": [
+    "claude-code",
+    "codex",
+    "openai-codex",
+    "opencode",
+    "ai-agents",
+    "agent-skills",
+    "task-manager",
+    "progress-tracker",
+    "local-first",
+    "git",
+    "json",
+    "nextjs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luckysolanki902/petal.git"
+  },
+  "homepage": "https://github.com/luckysolanki902/petal#readme",
+  "bugs": {
+    "url": "https://github.com/luckysolanki902/petal/issues"
+  }
 }

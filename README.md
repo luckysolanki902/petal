@@ -1,16 +1,25 @@
-# Petal 🌼
+# Petal
 
-**A little progress, everywhere.**
+Local task and progress tracking for **Claude Code, OpenAI Codex, and OpenCode**.
 
-A calm, local-first workspace for you and your coding agents. Bring your projects into one cream-colored dashboard, keep evidence close to the work, and let your agent maintain the details while you decide what matters.
+Petal gives coding agents and people a shared project dashboard backed by JSON files and Git. Track tasks, to-dos, findings, notes, and verified progress across multiple projects. It runs on your machine without an account, a model API key, or a cloud database.
 
-Petal is an independent app. Your project files stay in your projects. No account, subscription, model API key, or cloud database is required.
+- **Agent skills:** install instructions for Claude Code, Codex, and OpenCode.
+- **Multiple projects:** one dashboard and one separate, local Git repository for tracker data.
+- **Project customization:** statuses, completion rules, categories/colors, typed custom fields, and labels with previewed migrations.
+- **Evidence alongside work:** preserve findings, verification, nested metadata, IDs, and dates.
+- **Explicit Git sync:** checkpoints stay local unless you connect an origin in Settings.
+- **Light and dark themes:** cream or a black sky with shooting stars; keyboard-accessible menus and reduced-motion support.
+
+[Source](https://github.com/luckysolanki902/petal) · [Issues](https://github.com/luckysolanki902/petal/issues) · [MIT license](LICENSE)
 
 ## Run from source
 
 Requires Node.js 22 or newer, npm, and Git for checkpoints.
 
 ```sh
+git clone https://github.com/luckysolanki902/petal.git
+cd petal
 npm ci
 npm run build
 npm link
@@ -22,14 +31,14 @@ petal
 
 `petal init` creates a tracker under `~/.config/petal/data/projects/` and registers the project locally. It never rewrites your source code or agent configuration. Repeat it in another project; the dashboard's project selector switches between them. `petal` starts or reuses a background server at `http://localhost:8766` and opens your browser.
 
-The package is prepared for npm distribution as `petal-workspace`; it is **not yet published**. Until a public release exists, use the source instructions or install a verified release tarball:
+The npm package name is `petal-workspace`; it is **not yet published to npm**. Use the source instructions above or create a local installable tarball:
 
 ```sh
 npm pack
 npm install -g ./petal-workspace-0.1.0.tgz
 ```
 
-## A simpler working day
+## Task tracking
 
 | Status  | Meaning                                                    |
 | ------- | ---------------------------------------------------------- |
@@ -38,7 +47,9 @@ npm install -g ./petal-workspace-0.1.0.tgz
 | Waiting | A decision or external dependency needs attention          |
 | Done    | No required work remains                                   |
 
-Each item can also have an AI-maintained percentage, remaining-time estimate, and difficulty. An unassessed percentage displays a dash. Completion is an estimate of verified scope, not a timer. Done displays 100%.
+These are the defaults; projects can define their own workflow and completion rules in Settings.
+
+Each item can also have an AI-maintained percentage, remaining-time estimate, and difficulty. An unassessed percentage displays a dash. Completion is an estimate of verified scope, not a timer. Configured completion statuses display 100%.
 
 - Switch collections with icon chips; keep the overview across all work when that is more useful.
 - Click a row to see findings, references, arbitrary nested evidence, timestamps, and notes.
@@ -48,6 +59,21 @@ Each item can also have an AI-maintained percentage, remaining-time estimate, an
 - Drafts survive reloads in the same browser session. Revision conflicts keep the draft and reject stale writes; review the latest evidence before discarding/reapplying it.
 - Project switching is disabled while drafts are pending. Save or discard first.
 - Checkpoint commits all registered project trackers to one shared Git repository. It stays local unless you connect an origin in Settings; with an origin, an explicit checkpoint also pushes. Disconnect the origin to return to local-only operation. No Git publication happens in the background.
+
+## Project configuration in Settings
+
+Open **Settings → Project** to customize the selected project:
+
+| Area          | Options                                                               |
+| ------------- | --------------------------------------------------------------------- |
+| Workflow      | Status names, order, colors, and which statuses complete work         |
+| Categories    | Suggested category names and colors; existing names stay valid        |
+| Custom fields | Optional text, number, and checkbox fields, editable in item details  |
+| Labels        | Display names for findings, changes, verification, and status details |
+
+Click **Review changes**, review the affected files, then **Apply changes**. Renaming or removing an existing status needs an explicit mapping. A stale preview cannot overwrite newer tracker changes. The app preserves IDs, evidence, creation dates, and status dates during label mappings, keeps a local migration audit, and journals multi-file writes so an interrupted application can roll back on the next operation. Changing a field type is rejected when existing values conflict; removing a definition preserves its saved values as extra evidence.
+
+Configuration lives in `project-settings.json` beside the project's `data/` directory. The dashboard, CLI, save routes, counts, completion percentages, and bulk deletion share these rules. Agents receive the configuration from `petal task list`; they should use its exact status names and field types. Changing Settings never publishes data. To reuse a setup, choose **Import from another workspace**. It copies configuration into the editor only; it never copies tasks or changes the source workspace. Review and apply it separately. New workspaces have no preset categories, custom fields, or display-label overrides. To-do categories appear in list filters, table badges, and the item sidebar; they can be assigned when adding or editing a to-do. [Configuration details](docs/project-customization.md).
 
 ## CLI
 

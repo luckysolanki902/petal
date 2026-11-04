@@ -15,3 +15,8 @@
 !.next/app-build-manifest.json
 !.next/required-server-files.json
 !.next/package.json
+
+!.next/app-path-routes-manifest.json
+!.next/images-manifest.json
+!.next/fallback-build-manifest.json
+!.next/export-marker.json

@@ -121,7 +121,7 @@ async function init() {
   });
   await fs.writeFile(
     path.join(dir, "AGENTS.md"),
-    "Use the Petal skill to track work here. Run `petal task list` and `petal task update --help`. Statuses: To do, Doing, Waiting, Done. Keep progress 0–100 evidence-based. Preserve IDs, creation dates, comments and arbitrary evidence. Never publish without user authorization.\n",
+    "Use the Petal skill to track work here. Run `petal task list` and `petal task update --help`. Read configuration.statuses and configuration.fields from task list. The default statuses are To do, Doing, Waiting, Done; projects can customize them. Keep progress 0–100 evidence-based. Preserve IDs, creation dates, comments and arbitrary evidence. Never publish without user authorization.\n",
   );
   await fs.writeFile(
     path.join(dir, ".gitignore"),

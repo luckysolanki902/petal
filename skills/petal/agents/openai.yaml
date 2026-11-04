@@ -1,0 +1,4 @@
+interface:
+  display_name: "Petal"
+  short_description: "Track project work and evidence-based progress"
+  default_prompt: "Use $petal to inspect and update this project's work tracker."
